@@ -6,9 +6,24 @@
 #include  CMSIS_device_header
 #include "cmsis_os2.h"
 
-#define RED_LED 18 // PortB Pin 18
-#define GREEN_LED 19 // PortB Pin 19
-#define BLUE_LED 1 // PortD Pin 1
+#define RED_LED_0 11 // PortC Pin 11
+#define RED_LED_1 10 // PortC Pin 10
+#define RED_LED_2 6 // PortC Pin 6
+#define RED_LED_3 5 // PortC Pin 5
+#define RED_LED_4 4 // PortC Pin 4
+#define RED_LED_5 3 // PortC Pin 3
+#define RED_LED_6 0 // PortC Pin 0
+#define RED_LED_7 7 // PortC Pin 7
+
+#define GREEN_LED_0 9 // PortC Pin 9
+#define GREEN_LED_1 8 // PortC Pin 8
+#define GREEN_LED_2 5 // PortA Pin 5
+#define GREEN_LED_3 4 // PortA Pin 4
+#define GREEN_LED_4 12 // PortA Pin 12
+#define GREEN_LED_5 4 // PortD Pin 4
+#define GREEN_LED_6 1 // PortA Pin 1
+#define GREEN_LED_7 2 // PortA Pin 2
+
 #define MASK(x) (1 << (x))
 
 #define PTB0_Pin 0
@@ -20,23 +35,83 @@
 #define UART2_INT_PRIO 128
 
 void initGPIO(void) {
-	// Enable Clock to PORTB and PORTD
-	SIM->SCGC5 |= ((SIM_SCGC5_PORTB_MASK) | (SIM_SCGC5_PORTD_MASK));
+	// Enable Clock to PORTA, PORTC and PORTD
+	SIM->SCGC5 |= ((SIM_SCGC5_PORTA_MASK) | (SIM_SCGC5_PORTC_MASK) | (SIM_SCGC5_PORTD_MASK));
 	
-	// Configure MUX settings to make all 3 pins GPIO
+	// Configure MUX settings to make all pins GPIO
+	// Using the 2 rows at lower right
 	
-	PORTB->PCR[RED_LED] &= ~PORT_PCR_MUX_MASK;
-	PORTB->PCR[RED_LED] |= PORT_PCR_MUX(1);
+	// First row
+	PORTC->PCR[RED_LED_0] &= ~PORT_PCR_MUX_MASK;
+	PORTC->PCR[RED_LED_0] |= PORT_PCR_MUX(1);
 	
-	PORTB->PCR[GREEN_LED] &= ~PORT_PCR_MUX_MASK;
-	PORTB->PCR[GREEN_LED] |= PORT_PCR_MUX(1);
+	PORTC->PCR[RED_LED_1] &= ~PORT_PCR_MUX_MASK;
+	PORTC->PCR[RED_LED_1] |= PORT_PCR_MUX(1);
 	
-	PORTD->PCR[BLUE_LED] &= ~PORT_PCR_MUX_MASK;
-	PORTD->PCR[BLUE_LED] |= PORT_PCR_MUX(1);
+	PORTC->PCR[RED_LED_2] &= ~PORT_PCR_MUX_MASK;
+	PORTC->PCR[RED_LED_2] |= PORT_PCR_MUX(1);
+	
+	PORTC->PCR[RED_LED_3] &= ~PORT_PCR_MUX_MASK;
+	PORTC->PCR[RED_LED_3] |= PORT_PCR_MUX(1);
+	
+	PORTC->PCR[RED_LED_4] &= ~PORT_PCR_MUX_MASK;
+	PORTC->PCR[RED_LED_4] |= PORT_PCR_MUX(1);
+	
+	PORTC->PCR[RED_LED_5] &= ~PORT_PCR_MUX_MASK;
+	PORTC->PCR[RED_LED_5] |= PORT_PCR_MUX(1);
+	
+	PORTC->PCR[RED_LED_6] &= ~PORT_PCR_MUX_MASK;
+	PORTC->PCR[RED_LED_6] |= PORT_PCR_MUX(1);
+	
+	PORTC->PCR[RED_LED_7] &= ~PORT_PCR_MUX_MASK;
+	PORTC->PCR[RED_LED_7] |= PORT_PCR_MUX(1);
+	
+	// Second row
+	PORTC->PCR[GREEN_LED_0] &= ~PORT_PCR_MUX_MASK;
+	PORTC->PCR[GREEN_LED_0] |= PORT_PCR_MUX(1);
+	
+	PORTC->PCR[GREEN_LED_1] &= ~PORT_PCR_MUX_MASK;
+	PORTC->PCR[GREEN_LED_1] |= PORT_PCR_MUX(1);
+	
+	PORTA->PCR[GREEN_LED_2] &= ~PORT_PCR_MUX_MASK;
+	PORTA->PCR[GREEN_LED_2] |= PORT_PCR_MUX(1);
+	
+	PORTA->PCR[GREEN_LED_3] &= ~PORT_PCR_MUX_MASK;
+	PORTA->PCR[GREEN_LED_3] |= PORT_PCR_MUX(1);
+	
+	PORTA->PCR[GREEN_LED_4] &= ~PORT_PCR_MUX_MASK;
+	PORTA->PCR[GREEN_LED_4] |= PORT_PCR_MUX(1);
+	
+	PORTD->PCR[GREEN_LED_5] &= ~PORT_PCR_MUX_MASK;
+	PORTD->PCR[GREEN_LED_5] |= PORT_PCR_MUX(1);
+	
+	PORTA->PCR[GREEN_LED_6] &= ~PORT_PCR_MUX_MASK;
+	PORTA->PCR[GREEN_LED_6] |= PORT_PCR_MUX(1);
+	
+	PORTA->PCR[GREEN_LED_7] &= ~PORT_PCR_MUX_MASK;
+	PORTA->PCR[GREEN_LED_7] |= PORT_PCR_MUX(1);
 	
 	// Set Data Direction Registers for PortB and PortD
-	PTB->PDDR |= (MASK(RED_LED) | MASK(GREEN_LED));
-	PTD->PDDR |= MASK(BLUE_LED);
+	
+	// First row
+	PTC->PDDR |= MASK(RED_LED_0);
+	PTC->PDDR |= MASK(RED_LED_1);
+	PTC->PDDR |= MASK(RED_LED_2);
+	PTC->PDDR |= MASK(RED_LED_3);
+	PTC->PDDR |= MASK(RED_LED_4);
+	PTC->PDDR |= MASK(RED_LED_5);
+	PTC->PDDR |= MASK(RED_LED_6);
+	PTC->PDDR |= MASK(RED_LED_7);
+	
+	// Second row
+	PTC->PDDR |= MASK(GREEN_LED_0);
+	PTC->PDDR |= MASK(GREEN_LED_1);
+	PTA->PDDR |= MASK(GREEN_LED_2);
+	PTA->PDDR |= MASK(GREEN_LED_3);
+	PTA->PDDR |= MASK(GREEN_LED_4);
+	PTD->PDDR |= MASK(GREEN_LED_5);
+	PTA->PDDR |= MASK(GREEN_LED_6);
+	PTA->PDDR |= MASK(GREEN_LED_7);
 }
 
 void initPWM(void){
