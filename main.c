@@ -26,8 +26,16 @@
 
 #define MASK(x) (1 << (x))
 
-#define PTB0_Pin 0
-#define PTB1_Pin 1
+#define BUZZER_PIN 0
+
+#define LEFT_FRONT_WHEEL_PIN1 2
+#define LEFT__FRONT_WHEEL_PIN2 3
+#define RIGHT__FRONT_WHEEL_PIN1 29
+#define RIGHT__FRONT_WHEEL_PIN2 30
+#define LEFT_BACK_WHEEL_PIN1 31
+#define LEFT_BACK_WHEEL_PIN2 24
+#define RIGHT_BACK_WHEEL_PIN1 25
+#define RIGHT_BACK_WHEEL_PIN2 0
 
 #define BAUD_RATE 9600
 #define UART_TX_PORTE0 0
@@ -36,6 +44,7 @@
 
 
 osSemaphoreId_t mySem_Green;
+osSemaphoreId_t mySem_Buzzer;
 
 void initGPIO(void) {
 	// Enable Clock to PORTA, PORTC and PORTD
@@ -120,32 +129,74 @@ void initGPIO(void) {
 void initPWM(void){
 
 	//Enable clock for Port B
-	SIM_SCGC5 |= SIM_SCGC5_PORTB_MASK;
+	SIM_SCGC5 |= ((SIM_SCGC5_PORTA_MASK) | (SIM_SCGC5_PORTB_MASK) | (SIM_SCGC5_PORTE_MASK));
 
 	//Clear PTB0_Pin and PTB1_Pin settings and configure as PWM
-	PORTB->PCR[PTB0_Pin] &= ~PORT_PCR_MUX_MASK;
-	PORTB->PCR[PTB0_Pin] |= PORT_PCR_MUX(3);
-	PORTB->PCR[PTB1_Pin] &= ~PORT_PCR_MUX_MASK;
-	PORTB->PCR[PTB1_Pin] |= PORT_PCR_MUX(3);
+	PORTB->PCR[BUZZER_PIN] &= ~PORT_PCR_MUX_MASK;
+	PORTB->PCR[BUZZER_PIN] |= PORT_PCR_MUX(3);
+
+	PORTB->PCR[LEFT_FRONT_WHEEL_PIN1] &= ~PORT_PCR_MUX_MASK;
+	PORTB->PCR[LEFT_FRONT_WHEEL_PIN1] |= PORT_PCR_MUX(3);
+	PORTB->PCR[LEFT__FRONT_WHEEL_PIN2] &= ~PORT_PCR_MUX_MASK;
+	PORTB->PCR[LEFT__FRONT_WHEEL_PIN2] |= PORT_PCR_MUX(3);
+
+	PORTE->PCR[RIGHT__FRONT_WHEEL_PIN1] &= ~PORT_PCR_MUX_MASK;
+	PORTE->PCR[RIGHT__FRONT_WHEEL_PIN1] |= PORT_PCR_MUX(3);
+	PORTE->PCR[RIGHT__FRONT_WHEEL_PIN2] &= ~PORT_PCR_MUX_MASK;
+	PORTE->PCR[RIGHT__FRONT_WHEEL_PIN2] |= PORT_PCR_MUX(3);
+
+	PORTE->PCR[LEFT_BACK_WHEEL_PIN1] &= ~PORT_PCR_MUX_MASK;
+	PORTE->PCR[LEFT_BACK_WHEEL_PIN1] |= PORT_PCR_MUX(3);
+	PORTE->PCR[LEFT_BACK_WHEEL_PIN2] &= ~PORT_PCR_MUX_MASK;
+	PORTE->PCR[LEFT_BACK_WHEEL_PIN2] |= PORT_PCR_MUX(3);
+
+	PORTE->PCR[RIGHT_BACK_WHEEL_PIN1] &= ~PORT_PCR_MUX_MASK;
+	PORTE->PCR[RIGHT_BACK_WHEEL_PIN1] |= PORT_PCR_MUX(3);
+	PORTA->PCR[RIGHT_BACK_WHEEL_PIN2] &= ~PORT_PCR_MUX_MASK;
+	PORTA->PCR[RIGHT_BACK_WHEEL_PIN2] |= PORT_PCR_MUX(3);
 
 	//Enable clock for TPM1
-	SIM->SCGC6 |= SIM_SCGC6_TPM1_MASK;
+	SIM->SCGC6 |= ((SIM_SCGC6_TPM0_MASK) | (SIM_SCGC6_TPM1_MASK) | (SIM_SCGC6_TPM2_MASK));
 
-	//Clear the TPMSRC bits and set the clock source as MCGFLLCLK clock or MCGPLLCLK/2  
+	//Clear the TPMSRC bits and set the clock source as MCGFLLCLK clock or MCGPLLCLK/2
 	SIM->SOPT2 &= ~SIM_SOPT2_TPMSRC_MASK;
 	SIM->SOPT2 |= SIM_SOPT2_TPMSRC(1);
 
+	TPM0->MOD = 0;
+	TPM0_C0V = 0;
+
 	TPM1->MOD = 0;
 	TPM1_C0V = 0;
+
+	TPM2->MOD = 0;
+	TPM2_C0V = 0;
+
+	//Increment on every LPTPM counter clock, set pre-scaling to 128 and operate in count up
+	TPM0->SC &= ~((TPM_SC_CMOD_MASK) | (TPM_SC_PS_MASK));
+	TPM0->SC |= (TPM_SC_CMOD(1)) | (TPM_SC_PS(7));
+	TPM0->SC &= ~(TPM_SC_CPWMS_MASK);
 
 	//Increment on every LPTPM counter clock, set pre-scaling to 128 and operate in count up
 	TPM1->SC &= ~((TPM_SC_CMOD_MASK) | (TPM_SC_PS_MASK));
 	TPM1->SC |= (TPM_SC_CMOD(1)) | (TPM_SC_PS(7));
 	TPM1->SC &= ~(TPM_SC_CPWMS_MASK);
 
+	//Increment on every LPTPM counter clock, set pre-scaling to 128 and operate in count up
+	TPM2->SC &= ~((TPM_SC_CMOD_MASK) | (TPM_SC_PS_MASK));
+	TPM2->SC |= (TPM_SC_CMOD(1)) | (TPM_SC_PS(7));
+	TPM2->SC &= ~(TPM_SC_CPWMS_MASK);
+
+	//Set as edge-aligned PWM with high true pulses
+	TPM0_C0SC &= ~((TPM_CnSC_ELSB_MASK) | (TPM_CnSC_ELSA_MASK) | (TPM_CnSC_MSB_MASK) | (TPM_CnSC_MSA_MASK));
+	TPM0_C0SC |= (TPM_CnSC_ELSB(1) | TPM_CnSC_MSB(1));
+
 	//Set as edge-aligned PWM with high true pulses
 	TPM1_C0SC &= ~((TPM_CnSC_ELSB_MASK) | (TPM_CnSC_ELSA_MASK) | (TPM_CnSC_MSB_MASK) | (TPM_CnSC_MSA_MASK));
 	TPM1_C0SC |= (TPM_CnSC_ELSB(1) | TPM_CnSC_MSB(1));
+
+	//Set as edge-aligned PWM with high true pulses
+	TPM2_C0SC &= ~((TPM_CnSC_ELSB_MASK) | (TPM_CnSC_ELSA_MASK) | (TPM_CnSC_MSB_MASK) | (TPM_CnSC_MSA_MASK));
+	TPM2_C0SC |= (TPM_CnSC_ELSB(1) | TPM_CnSC_MSB(1));
 }
 
 void initUART1(uint32_t baud_rate)
@@ -188,10 +239,40 @@ void UART1_IRQHandler(void) {
 
 	if (rx_data == 0x00) {
 			osSemaphoreRelease(mySem_Green);
+			osSemaphoreRelease(mySem_Buzzer);
 		}
 	}
 }
 
+//modValue(freq) calculates the required MOD value for a given frequency, freq.
+int modValue(int freq){
+	//375000 is the new clock frequency after prescaling by 128
+	return (375000/freq) - 1;
+}
+
+//delay() creates a delay
+void delay(){
+	int counter = 0;
+	while(counter < 2091752)
+		counter++;
+}
+
+void generateSoundPWM0(int freq){
+	TPM0->MOD = modValue(freq);
+	TPM0_C0V = modValue(freq)/2;
+}
+
+
+void generateSoundPWM1(int freq){
+	TPM1->MOD = modValue(freq);
+	TPM1_C0V = modValue(freq)/2;
+}
+
+
+void generateSoundPWM2(int freq){
+	TPM2->MOD = modValue(freq);
+	TPM2_C0V = modValue(freq)/2;
+}
 
 void led_green_thread (void *argument){
 	//...
@@ -201,6 +282,47 @@ void led_green_thread (void *argument){
 		osDelay(1000);
 		led_control(Green, led_off);
 		osDelay(1000);
+	}
+}
+
+void led_buzzer_thread (void *argument){
+	//...
+	for (;;){
+		osSemaphoreAcquire(mySem_Buzzer, osWaitForever);
+		//262Hz (Note C)
+		generateSound(262);
+
+		delay();
+
+		//294Hz (Note D)
+		generateSound(294);
+
+		delay();
+
+		//330Hz (Note E)
+		generateSound(330);
+
+		delay();
+
+		//349Hz (Note F)
+		generateSound(349);
+
+		delay();
+
+		//392Hz (Note G)
+		generateSound(392);
+
+		delay();
+
+		//440Hz (Note A)
+		generateSound(440);
+
+		delay();
+
+		//494Hz (Note B)
+		generateSound(494);
+
+		delay();
 	}
 }
 
@@ -223,8 +345,11 @@ int main (void) {
 	initPWM();
 	// ...
 
-	mySem_Green = osSemaphoreNew(1,0,NULL);
 	osKernelInitialize();                 // Initialize CMSIS-RTOS
+	mySem_Green = osSemaphoreNew(1,0,NULL);
+	mySem_Buzzer = osSemaphoreNew(1, 0, NULL)
+  osThreadNew(led_green_thread, NULL, NULL);    // Create application led_green
+  osThreadNew(led_buzzer_thread, NULL, NULL);    // Create application led_buzzer
 	osThreadNew(app_main, NULL, NULL);    // Create application main thread
 	osKernelStart();                      // Start thread execution
 	for (;;) {}
