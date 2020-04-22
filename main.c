@@ -6,23 +6,23 @@
 #include  CMSIS_device_header
 #include "cmsis_os2.h"
 
-#define RED_LED_0 11 // PortC Pin 11
-#define RED_LED_1 10 // PortC Pin 10
-#define RED_LED_2 6 // PortC Pin 6
-#define RED_LED_3 5 // PortC Pin 5
-#define RED_LED_4 4 // PortC Pin 4
-#define RED_LED_5 3 // PortC Pin 3
-#define RED_LED_6 0 // PortC Pin 0
-#define RED_LED_7 7 // PortC Pin 7
+#define RED_LED_0 11 // Port C Pin 11
+#define RED_LED_1 10 // Port C Pin 10
+#define RED_LED_2 6 // Port C Pin 6
+#define RED_LED_3 5 // Port C Pin 5
+#define RED_LED_4 4 // Port C Pin 4
+#define RED_LED_5 3 // Port C Pin 3
+#define RED_LED_6 0 // Port C Pin 0
+#define RED_LED_7 7 // Port C Pin 7
 
-#define GREEN_LED_0 9 // PortC Pin 9
-#define GREEN_LED_1 8 // PortC Pin 8
-#define GREEN_LED_2 5 // PortA Pin 5
-#define GREEN_LED_3 4 // PortA Pin 4
-#define GREEN_LED_4 12 // PortA Pin 12
-#define GREEN_LED_5 4 // PortD Pin 4
-#define GREEN_LED_6 1 // PortA Pin 1
-#define GREEN_LED_7 2 // PortA Pin 2
+#define GREEN_LED_0 9 // Port C Pin 9
+#define GREEN_LED_1 8 // Port C Pin 8
+#define GREEN_LED_2 5 // Port A Pin 5
+#define GREEN_LED_3 4 // Port A Pin 4
+#define GREEN_LED_4 12 // Port A Pin 12
+#define GREEN_LED_5 4 // Port D Pin 4
+#define GREEN_LED_6 1 // Port A Pin 1
+#define GREEN_LED_7 2 // Port A Pin 2
 
 #define MASK(x) (1 << (x))
 
@@ -43,25 +43,24 @@
 #define UART1_INT_PRIO 128
 
 // buzzer set LSB, LED set 2nd LSB
-osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, disconnecting_flag ,moving_flag;
+osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, disconnecting_flag, moving_flag;
 
-
-// one device, different different behavior for each connection state, working throughout
+// one device, different behavior for each connection state, working throughout
 osMutexId_t buzzerMutex, greenMutex;
 
 // Car does not move throughout, therefore use semaphore
 osSemaphoreId_t mySem_Wheels;
 
-// tell red LED to change rate
-// can avoid two different functions since only rate changes
-osMessageQueueId_t redMsg;
-
 enum color_t{Red, Green};
 enum state_t{led_on, led_off};
 
 volatile uint8_t rx_data = 0;
+
+// coordinates
 volatile uint8_t x = 0;
 volatile uint8_t y = 0;
+
+// can avoid two different functions for red LED since only delay changes
 volatile uint32_t delay = 0;
 
 
@@ -147,34 +146,38 @@ void initGPIO(void) {
 
 void initPWM(void){
 
-	//Enable clock for Port B
+	//Enable clock for Ports A, B and E
 	SIM_SCGC5 |= ((SIM_SCGC5_PORTA_MASK) | (SIM_SCGC5_PORTB_MASK) | (SIM_SCGC5_PORTE_MASK));
 
 	//Clear PTB0_Pin and PTB1_Pin settings and configure as PWM
 	PORTB->PCR[BUZZER_PIN] &= ~PORT_PCR_MUX_MASK;
 	PORTB->PCR[BUZZER_PIN] |= PORT_PCR_MUX(3);
 
+	// Same for left front wheel
 	PORTB->PCR[LEFT_FRONT_WHEEL_PIN1] &= ~PORT_PCR_MUX_MASK;
 	PORTB->PCR[LEFT_FRONT_WHEEL_PIN1] |= PORT_PCR_MUX(3);
 	PORTB->PCR[LEFT__FRONT_WHEEL_PIN2] &= ~PORT_PCR_MUX_MASK;
 	PORTB->PCR[LEFT__FRONT_WHEEL_PIN2] |= PORT_PCR_MUX(3);
 
+	// Same for right front wheel
 	PORTE->PCR[RIGHT__FRONT_WHEEL_PIN1] &= ~PORT_PCR_MUX_MASK;
 	PORTE->PCR[RIGHT__FRONT_WHEEL_PIN1] |= PORT_PCR_MUX(3);
 	PORTE->PCR[RIGHT__FRONT_WHEEL_PIN2] &= ~PORT_PCR_MUX_MASK;
 	PORTE->PCR[RIGHT__FRONT_WHEEL_PIN2] |= PORT_PCR_MUX(3);
 
+	// same for left back wheel
 	PORTE->PCR[LEFT_BACK_WHEEL_PIN1] &= ~PORT_PCR_MUX_MASK;
 	PORTE->PCR[LEFT_BACK_WHEEL_PIN1] |= PORT_PCR_MUX(3);
 	PORTE->PCR[LEFT_BACK_WHEEL_PIN2] &= ~PORT_PCR_MUX_MASK;
 	PORTE->PCR[LEFT_BACK_WHEEL_PIN2] |= PORT_PCR_MUX(3);
 
+	// same for right back wheel
 	PORTE->PCR[RIGHT_BACK_WHEEL_PIN1] &= ~PORT_PCR_MUX_MASK;
 	PORTE->PCR[RIGHT_BACK_WHEEL_PIN1] |= PORT_PCR_MUX(3);
 	PORTA->PCR[RIGHT_BACK_WHEEL_PIN2] &= ~PORT_PCR_MUX_MASK;
 	PORTA->PCR[RIGHT_BACK_WHEEL_PIN2] |= PORT_PCR_MUX(3);
 
-	//Enable clock for TPM1
+	//Enable clock for TPM0, TPM1 and TPM2
 	SIM->SCGC6 |= ((SIM_SCGC6_TPM0_MASK) | (SIM_SCGC6_TPM1_MASK) | (SIM_SCGC6_TPM2_MASK));
 
 	//Clear the TPMSRC bits and set the clock source as MCGFLLCLK clock or MCGPLLCLK/2
@@ -263,12 +266,12 @@ void UART1_IRQHandler(void) {
 			osEventFlagsSet(connected_flag, NULL);
 			osEventFlagsSet(disconnecting_flag, 0x0000001);
 		} else {
-			osEventFlagsSet(moving_flag, 0x0000001);
 			x = rx_data;
 			rx_data = UART1->D;
 			y = rx_data;
 			delay = 500;
 			osSemaphoreRelease(mySem_Wheels);
+			osEventFlagsSet(moving_flag, 0x0000001);
 		}
 	}
 }
@@ -354,6 +357,12 @@ void generateSoundPWM2(int freq){
 	TPM2->MOD = modValue(freq);
 	TPM2_C0V = modValue(freq)/2;
 }
+
+void offRGB(void) {
+	led_control(Green, led_off);
+	led_control(Red, led_off);
+}
+
 
 void connecting_tone_thread (void *argument){
 	//...
@@ -602,6 +611,7 @@ int main (void) {
 	initGPIO();
 	initUART1(BAUD_RATE);
 	initPWM();
+	offRGB();
 	// ...
 
 	osKernelInitialize();                 // Initialize CMSIS-RTOS
@@ -620,7 +630,10 @@ int main (void) {
 	// semaphores
 	mySem_Wheels = osSemaphoreNew(1,0,NULL);
 
-	// threads
+	/*
+	 *	threads
+	 */
+
 	// for buzzer
 	osThreadNew(disconnecting_tone_thread, NULL, NULL);
 	osThreadNew(connecting_tone_thread, NULL, NULL); 
