@@ -46,11 +46,12 @@
 #define UART_RX_PORTE1 1
 #define UART1_INT_PRIO 128
 
+// 0: disconnected, 1: connected, 2: disconnecting
+osEventFlagsId_t connected_flag;
+
 
 enum color_t{Red, Green, Blue};
 enum state_t{led_on, led_off};
-
-
 
 volatile uint8_t rx_data = 0;
 
@@ -249,9 +250,11 @@ void UART1_IRQHandler(void) {
 	if ((UART1->S1 & UART_S1_RDRF_MASK)) {
 		rx_data = UART1->D;
 
-	if (rx_data == 0x00) {
-			osSemaphoreRelease(mySem_Green);
-			osSemaphoreRelease(mySem_Buzzer);
+		// 1: connected, 2: disconnect
+		if (rx_data == 0x01) {
+			osEventFlagsSet(connected_flag, 0x0000001);
+		} else if (rx_data == 0x02) {
+			osEventFlagsSet(connected_flag, 0x0000002);
 		}
 	}
 }
@@ -390,6 +393,7 @@ int main (void) {
 	// ...
 
 	osKernelInitialize();                 // Initialize CMSIS-RTOS
+	connected_flag = osEventFlagsNew(NULL);
 	mySem_Green = osSemaphoreNew(1,0,NULL);
 	mySem_Buzzer = osSemaphoreNew(1, 0, NULL);
   osThreadNew(led_green_thread, NULL, NULL);    // Create application led_green
