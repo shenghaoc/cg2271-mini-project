@@ -60,7 +60,8 @@ enum color_t{Red, Green};
 enum state_t{led_on, led_off};
 
 volatile uint8_t rx_data = 0;
-
+volatile uint8_t x = 0;
+volatile uint8_t y = 0;
 
 
 void initGPIO(void) {
@@ -256,9 +257,14 @@ void UART1_IRQHandler(void) {
 
 		if (rx_data == 0x01) {
 			osEventFlagsSet(connecting_flag, 0x0000003);
-		} else if (rx_data == 0x03) {	\
+		} else if (rx_data == 0x02) {	\
 			osEventFlagsSet(connected_flag, NULL);
 			osEventFlagsSet(disconnecting_flag, 0x0000001);
+		} else {
+			osSemaphoreRelease(mySem_Wheels);
+			x = rx_data;
+			rx_data = UART1->D;
+			y = rx_data;
 		}
 	}
 }
