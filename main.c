@@ -257,7 +257,8 @@ void UART1_IRQHandler(void) {
 
 		if (rx_data == 0x01) {
 			osEventFlagsSet(connecting_flag, 0x0000003);
-		} else if (rx_data == 0x02) {	\
+		} else if (rx_data == 0x02) {
+			// press music icon to disconnect
 			osEventFlagsSet(connected_flag, NULL);
 			osEventFlagsSet(disconnecting_flag, 0x0000001);
 		} else {
