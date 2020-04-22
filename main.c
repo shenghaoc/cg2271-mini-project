@@ -46,7 +46,7 @@
 #define UART_RX_PORTE1 1
 #define UART1_INT_PRIO 128
 
-// buzzer set LSB, LED set 
+// buzzer set LSB, LED set 2nd LSB
 osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, disconnecting_flag;
 
 
@@ -256,7 +256,8 @@ void UART1_IRQHandler(void) {
 
 		if (rx_data == 0x01) {
 			osEventFlagsSet(connecting_flag, 0x0000003);
-		} else if (rx_data == 0x03) {
+		} else if (rx_data == 0x03) {	\
+			osEventFlagsSet(connected_flag, NULL);
 			osEventFlagsSet(disconnecting_flag, 0x0000001);
 		}
 	}
@@ -390,7 +391,6 @@ void connecting_tone_thread (void *argument){
 		osDelay(2091752);		
 
 		osMutexRelease(buzzerMutex);
-		osEventFlagsSet(connecting_flag, NULL);
 		osEventFlagsSet(connected_flag, 0x0000001);
 	}
 }
@@ -490,7 +490,10 @@ void connecting_flash_thread (void *argument){
 void app_main (void *argument) {
 
 	// ...
-	for (;;) {}
+	for (;;) {
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
+		osEventFlagsSet(connecting_flag, NULL);
+	}
 }
 
 int main (void) {
