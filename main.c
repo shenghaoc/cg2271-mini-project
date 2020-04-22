@@ -43,7 +43,10 @@
 #define UART1_INT_PRIO 128
 
 // buzzer set LSB, LED set 2nd LSB
-osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, disconnecting_flag, moving_flag;
+osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, moving_flag;
+
+// only tone need to be played, disconnection tied to tone thread
+osThreadId_t disconnecting_flag;
 
 // one device, different behavior for each connection state, working throughout
 osMutexId_t buzzerMutex, greenMutex;
@@ -500,7 +503,7 @@ void connecting_flash_thread (void *argument){
 void running_green_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(connected_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
 		osEventFlagsWait(moving_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(greenMutex, osWaitForever);
 
@@ -554,7 +557,7 @@ void running_green_thread (void *argument){
 void constant_green_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(connected_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
 		osEventFlagsWait(moving_flag, NULL, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(greenMutex, osWaitForever);
 		// always on
@@ -566,7 +569,7 @@ void constant_green_thread (void *argument){
 void flashing_red_thread (void *argument){
 	// ...
 	for (;;) {
-		osEventFlagsWait(connected_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
 		led_control(Red, led_on);
 		osDelay(delay);
 		led_control(Red, led_off);
@@ -578,7 +581,7 @@ void flashing_red_thread (void *argument){
 void wheel_control_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(connected_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
 		osSemaphoreAcquire(mySem_Wheels, osWaitForever);
 
 
@@ -620,7 +623,6 @@ int main (void) {
 	osEventFlagsSet(disconnected_flag, 0x0000001); // by default disconnected
 	connecting_flag = osEventFlagsNew(NULL);
 	connected_flag = osEventFlagsNew(NULL);
-	disconnecting_flag = osEventFlagsNew(NULL);
 	moving_flag = osEventFlagsNew(NULL);
 
 	// mutexes
@@ -635,7 +637,7 @@ int main (void) {
 	 */
 
 	// for buzzer
-	osThreadNew(disconnecting_tone_thread, NULL, NULL);
+	disconnecting_flag = osThreadNew(disconnecting_tone_thread, NULL, NULL);
 	osThreadNew(connecting_tone_thread, NULL, NULL); 
 	osThreadNew(connected_tone_thread, NULL, NULL);  
 
