@@ -6,10 +6,6 @@
 #include  CMSIS_device_header
 #include "cmsis_os2.h"
 
-#define RED_LED 18 // PortB Pin 18
-#define GREEN_LED 19 // PortB Pin 19
-#define BLUE_LED 1 // PortD Pin 1
-
 #define RED_LED_0 11 // PortC Pin 11
 #define RED_LED_1 10 // PortC Pin 10
 #define RED_LED_2 6 // PortC Pin 6
