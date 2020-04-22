@@ -47,7 +47,7 @@
 #define UART1_INT_PRIO 128
 
 // buzzer set LSB, LED set 2nd LSB
-osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, disconnecting_flag;
+osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, disconnecting_flag ,moving_flag;
 
 
 // one device, different different behavior for each connection state, working throughout
@@ -262,10 +262,11 @@ void UART1_IRQHandler(void) {
 			osEventFlagsSet(connected_flag, NULL);
 			osEventFlagsSet(disconnecting_flag, 0x0000001);
 		} else {
-			osSemaphoreRelease(mySem_Wheels);
+			osEventFlagsSet(moving_flag, 0x0000001);
 			x = rx_data;
 			rx_data = UART1->D;
 			y = rx_data;
+			osSemaphoreRelease(mySem_Wheels);
 		}
 	}
 }
@@ -490,6 +491,11 @@ void wheel_control_thread (void *argument){
 	for (;;){
 		osEventFlagsWait(connected_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
 		osSemaphoreAcquire(mySem_Wheels, osWaitForever);
+		
+		
+		
+		// Signal movement has finished
+		osEventFlagsSet(moving_flag, NULL);
 	}
 }
 
@@ -523,6 +529,7 @@ int main (void) {
 	connecting_flag = osEventFlagsNew(NULL);
 	connected_flag = osEventFlagsNew(NULL);
 	disconnecting_flag = osEventFlagsNew(NULL);
+	moving_flag = osEventFlagsNew(NULL);
 	
 	// mutexes
 	buzzerMutex = osMutexNew(NULL);
