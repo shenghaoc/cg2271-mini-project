@@ -301,13 +301,6 @@ int modValue(int freq){
 	return (375000/freq) - 1;
 }
 
-//delay() creates a delay
-void delay(){
-	int counter = 0;
-	while(counter < 2091752)
-		counter++;
-}
-
 void generateSoundPWM0(int freq){
 	TPM0->MOD = modValue(freq);
 	TPM0_C0V = modValue(freq)/2;
@@ -344,38 +337,32 @@ void connecting_tone_thread (void *argument){
 		osMutexAcquire(buzzerMutex, osWaitForever);
 		//262Hz (Note C)
 		generateSoundPWM1(262);
-
-		delay();
+		osDelay(2091752);
 
 		//294Hz (Note D)
 		generateSoundPWM1(294);
-
-		delay();
+		osDelay(2091752);
 
 		//330Hz (Note E)
-		generateSoundPWM1(330);
-
-		delay();
+		generateSoundPWM1(330);		
+		osDelay(2091752);
 
 		//349Hz (Note F)
-		generateSoundPWM1(349);
-
-		delay();
+		generateSoundPWM1(349);		
+		osDelay(2091752);
 
 		//392Hz (Note G)
 		generateSoundPWM1(392);
-
-		delay();
+		osDelay(2091752);
 
 		//440Hz (Note A)
 		generateSoundPWM1(440);
-
-		delay();
+		osDelay(2091752);
 
 		//494Hz (Note B)
 		generateSoundPWM1(494);
-
-		delay();
+		osDelay(2091752);		osDelay(2091752);
+		
 		osMutexRelease(buzzerMutex);
 		osEventFlagsSet(connected_flag, 0x0000001);
 	}
@@ -384,42 +371,37 @@ void connecting_tone_thread (void *argument){
 void connected_tone_thread (void *argument){
 	//...
 	for (;;){
+		// connected only after both connecting tone and green led flashed twice!
 		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 		//262Hz (Note C)
 		generateSoundPWM1(262);
-
-		delay();
+		osDelay(2091752);
 
 		//294Hz (Note D)
-		generateSoundPWM1(294);
-
-		delay();
+		generateSoundPWM1(294);	
+		osDelay(2091752);
 
 		//330Hz (Note E)
 		generateSoundPWM1(330);
-
-		delay();
+		osDelay(2091752);
 
 		//349Hz (Note F)
 		generateSoundPWM1(349);
-
-		delay();
+		osDelay(2091752);
 
 		//392Hz (Note G)
 		generateSoundPWM1(392);
-
-		delay();
+		osDelay(2091752);
 
 		//440Hz (Note A)
 		generateSoundPWM1(440);
-
-		delay();
+		osDelay(2091752);
 
 		//494Hz (Note B)
 		generateSoundPWM1(494);
-
-		delay();
+		osDelay(2091752);
+		
 		osMutexRelease(buzzerMutex);
 	}
 }
@@ -431,38 +413,32 @@ void disconnecting_tone_thread (void *argument){
 		osMutexAcquire(buzzerMutex, osWaitForever);
 		//262Hz (Note C)
 		generateSoundPWM1(262);
-
-		delay();
+		osDelay(2091752);
 
 		//294Hz (Note D)
 		generateSoundPWM1(294);
-
-		delay();
+		osDelay(2091752);
 
 		//330Hz (Note E)
 		generateSoundPWM1(330);
-
-		delay();
+		osDelay(2091752);
 
 		//349Hz (Note F)
 		generateSoundPWM1(349);
-
-		delay();
+		osDelay(2091752);
 
 		//392Hz (Note G)
 		generateSoundPWM1(392);
-
-		delay();
+		osDelay(2091752);
 
 		//440Hz (Note A)
 		generateSoundPWM1(440);
-
-		delay();
+		osDelay(2091752);
 
 		//494Hz (Note B)
 		generateSoundPWM1(494);
-
-		delay();
+		osDelay(2091752);
+		
 		osMutexRelease(buzzerMutex);
 		osEventFlagsSet(disconnected_flag, 0x0000001);
 	}
@@ -490,7 +466,7 @@ int main (void) {
 	osKernelInitialize();                 // Initialize CMSIS-RTOS
 	// event flags
 	disconnected_flag = osEventFlagsNew(NULL);
-	osEventFlagsSet(disconnected_flag, 0x0000001);
+	osEventFlagsSet(disconnected_flag, 0x0000001); // by default disconnected
 	connecting_flag = osEventFlagsNew(NULL);
 	connected_flag = osEventFlagsNew(NULL);
 	disconnecting_flag = osEventFlagsNew(NULL);
