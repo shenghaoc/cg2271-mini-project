@@ -6,6 +6,10 @@
 #include  CMSIS_device_header
 #include "cmsis_os2.h"
 
+#define RED_LED 18 // PortB Pin 18
+#define GREEN_LED 19 // PortB Pin 19
+#define BLUE_LED 1 // PortD Pin 1
+
 #define RED_LED_0 11 // PortC Pin 11
 #define RED_LED_1 10 // PortC Pin 10
 #define RED_LED_2 6 // PortC Pin 6
@@ -41,6 +45,14 @@
 #define UART_TX_PORTE0 0
 #define UART_RX_PORTE1 1
 #define UART1_INT_PRIO 128
+
+
+enum color_t{Red, Green, Blue};
+enum state_t{led_on, led_off};
+
+
+
+volatile uint8_t rx_data = 0;
 
 
 osSemaphoreId_t mySem_Green;
@@ -221,7 +233,7 @@ void initUART1(uint32_t baud_rate)
 	UART1->BDL = UART_BDL_SBR(divisor);
 
 	// No parity, 8 bits, two stop bits, other settings;
-	UART1->C1 = UART1->S2 = 0 UART1->C3 = 0;
+	UART1->C1 = UART1->S2 = UART1->C3 = 0;
 
 	// Enable transmitter and transmitter interrupt
 	UART1->C2 |= ((UART_C2_RE_MASK) | (UART_C2_RIE_MASK));
@@ -240,6 +252,38 @@ void UART1_IRQHandler(void) {
 	if (rx_data == 0x00) {
 			osSemaphoreRelease(mySem_Green);
 			osSemaphoreRelease(mySem_Buzzer);
+		}
+	}
+}
+
+void led_control(enum color_t color, enum state_t state)
+{
+	if (state == led_on)
+	{
+		if (color == Red)
+		{
+			PTB->PCOR = MASK(RED_LED);
+		}
+		else if (color == Green) 
+		{
+			PTB->PCOR = MASK(GREEN_LED);
+		}
+		else if (color == Blue) {
+			PTD->PCOR = MASK(BLUE_LED);
+		}
+	}
+	else
+	{
+		if (color == Red)
+		{
+			PTB->PSOR = MASK(RED_LED);
+		}
+		else if (color == Green) 
+		{
+			PTB->PSOR = MASK(GREEN_LED);
+		}
+		else if (color == Blue) {
+			PTD->PSOR = MASK(BLUE_LED);
 		}
 	}
 }
@@ -290,37 +334,37 @@ void led_buzzer_thread (void *argument){
 	for (;;){
 		osSemaphoreAcquire(mySem_Buzzer, osWaitForever);
 		//262Hz (Note C)
-		generateSound(262);
+		generateSoundPWM1(262);
 
 		delay();
 
 		//294Hz (Note D)
-		generateSound(294);
+		generateSoundPWM1(294);
 
 		delay();
 
 		//330Hz (Note E)
-		generateSound(330);
+		generateSoundPWM1(330);
 
 		delay();
 
 		//349Hz (Note F)
-		generateSound(349);
+		generateSoundPWM1(349);
 
 		delay();
 
 		//392Hz (Note G)
-		generateSound(392);
+		generateSoundPWM1(392);
 
 		delay();
 
 		//440Hz (Note A)
-		generateSound(440);
+		generateSoundPWM1(440);
 
 		delay();
 
 		//494Hz (Note B)
-		generateSound(494);
+		generateSoundPWM1(494);
 
 		delay();
 	}
@@ -347,7 +391,7 @@ int main (void) {
 
 	osKernelInitialize();                 // Initialize CMSIS-RTOS
 	mySem_Green = osSemaphoreNew(1,0,NULL);
-	mySem_Buzzer = osSemaphoreNew(1, 0, NULL)
+	mySem_Buzzer = osSemaphoreNew(1, 0, NULL);
   osThreadNew(led_green_thread, NULL, NULL);    // Create application led_green
   osThreadNew(led_buzzer_thread, NULL, NULL);    // Create application led_buzzer
 	osThreadNew(app_main, NULL, NULL);    // Create application main thread
