@@ -50,9 +50,11 @@
 osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, disconnecting_flag;
 
 
-// one buzzer for 3 different connection states
-osMutexId_t buzzerMutex;
+// one device, different different behavior for each connection state, working throughout
+osMutexId_t buzzerMutex, greenMutex, redMutex;
 
+// Car does not move throughout, therefore use semaphore
+osSemaphoreId_t mySem_Wheels;
 
 enum color_t{Red, Green};
 enum state_t{led_on, led_off};
@@ -60,8 +62,6 @@ enum state_t{led_on, led_off};
 volatile uint8_t rx_data = 0;
 
 
-osSemaphoreId_t mySem_Green;
-osSemaphoreId_t mySem_Buzzer;
 
 void initGPIO(void) {
 	// Enable Clock to PORTA, PORTC and PORTD
@@ -345,17 +345,6 @@ void generateSoundPWM2(int freq){
 	TPM2_C0V = modValue(freq)/2;
 }
 
-void led_green_thread (void *argument){
-	//...
-	for (;;){
-		osSemaphoreAcquire(mySem_Green, osWaitForever);
-		led_control(Green, led_on);
-		osDelay(1000);
-		led_control(Green, led_off);
-		osDelay(1000);
-	}
-}
-
 void connecting_tone_thread (void *argument){
 	//...
 	for (;;){
@@ -476,10 +465,16 @@ void connecting_flash_thread (void *argument){
 	//...
 	for (;;){
 		osEventFlagsWait(connecting_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
-		osMutexAcquire(buzzerMutex, osWaitForever);
-
-		osMutexRelease(buzzerMutex);
-		osEventFlagsSet(disconnected_flag, 0x0000001);
+		osMutexAcquire(greenMutex, osWaitForever);
+		// flash twice
+		for (int i = 0; i < 2; i++) {
+			led_control(Green, led_on);
+			osDelay(1000);
+			led_control(Green, led_off);
+			osDelay(1000);
+		}
+		osMutexRelease(greenMutex);
+		osEventFlagsSet(disconnected_flag, 0x0000002);
 	}
 }
 
@@ -491,7 +486,8 @@ void app_main (void *argument) {
 
 	// ...
 	for (;;) {
-		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
+		// wait for both buzzer and led to signal
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
 		osEventFlagsSet(connecting_flag, NULL);
 	}
 }
@@ -515,12 +511,14 @@ int main (void) {
 	
 	// mutexes
 	buzzerMutex = osMutexNew(NULL);
-
+	greenMutex = osMutexNew(NULL);
+	redMutex = osMutexNew(NULL);
+	
 	// semaphores
-	mySem_Green = osSemaphoreNew(1,0,NULL);
+	mySem_Wheels = osSemaphoreNew(1,0,NULL);
 	
 	// threads
-	osThreadNew(led_green_thread, NULL, NULL);    // Create application led_green
+	osThreadNew(connecting_flash_thread, NULL, NULL);    // Create application led_green
 	osThreadNew(connecting_tone_thread, NULL, NULL);    // Create application led_buzzer
 	osThreadNew(connected_tone_thread, NULL, NULL);    // Create application led_buzzer
 	osThreadNew(disconnecting_tone_thread, NULL, NULL);    // Create application led_buzzer
