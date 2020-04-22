@@ -486,6 +486,89 @@ void connecting_flash_thread (void *argument){
 	}
 }
 
+void running_green_thread (void *argument){
+	//...
+	for (;;){
+		osEventFlagsWait(connected_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(moving_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		osMutexAcquire(greenMutex, osWaitForever);
+		
+		// no function since only once
+		
+			PTC->PCOR = MASK(GREEN_LED_0);
+			osDelay(1000);
+			PTC->PSOR = MASK(GREEN_LED_0);
+			osDelay(1000);
+		
+			PTC->PCOR = MASK(GREEN_LED_1);
+			osDelay(1000);
+			PTC->PSOR = MASK(GREEN_LED_1);
+			osDelay(1000);
+		
+			PTA->PCOR = MASK(GREEN_LED_2);
+			osDelay(1000);
+			PTA->PSOR = MASK(GREEN_LED_2);
+			osDelay(1000);
+		
+			PTA->PCOR = MASK(GREEN_LED_3);
+			osDelay(1000);
+			PTA->PSOR = MASK(GREEN_LED_3);
+			osDelay(1000);
+			
+			PTA->PCOR = MASK(GREEN_LED_4);
+			osDelay(1000);
+			PTA->PSOR = MASK(GREEN_LED_4);
+			osDelay(1000);
+			
+			PTD->PCOR = MASK(GREEN_LED_5);
+			osDelay(1000);
+			PTD->PSOR = MASK(GREEN_LED_5);
+			osDelay(1000);
+			
+			PTA->PCOR = MASK(GREEN_LED_6);
+			osDelay(1000);
+			PTA->PSOR = MASK(GREEN_LED_6);
+			osDelay(1000);
+			
+			PTA->PCOR = MASK(GREEN_LED_7);
+			osDelay(1000);
+			PTA->PSOR = MASK(GREEN_LED_7);
+			osDelay(1000);
+		
+		
+		osMutexRelease(greenMutex);
+	}
+}
+
+void constant_green_thread (void *argument){
+	//...
+	for (;;){
+		osEventFlagsWait(connected_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(moving_flag, NULL, osFlagsWaitAny, osWaitForever);
+		osMutexAcquire(greenMutex, osWaitForever);
+		// always on
+		led_control(Green, led_on);
+		osMutexRelease(greenMutex);
+	}
+}
+
+void flashing_red_thread (void *argument){
+	//...
+	for (;;){
+		osEventFlagsWait(connecting_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		osMutexAcquire(greenMutex, osWaitForever);
+		// flash twice
+		for (int i = 0; i < 2; i++) {
+			led_control(Green, led_on);
+			osDelay(1000);
+			led_control(Green, led_off);
+			osDelay(1000);
+		}
+		osMutexRelease(greenMutex);
+		osEventFlagsSet(connected_flag, 0x0000002);
+	}
+}
+
 void wheel_control_thread (void *argument){
 	//...
 	for (;;){
@@ -541,12 +624,15 @@ int main (void) {
 	
 	// threads
 	// for buzzer
-	osThreadNew(connecting_flash_thread, NULL, NULL);  
+	osThreadNew(disconnecting_tone_thread, NULL, NULL);
 	osThreadNew(connecting_tone_thread, NULL, NULL); 
 	osThreadNew(connected_tone_thread, NULL, NULL);  
 	
 	// for LED
-	osThreadNew(disconnecting_tone_thread, NULL, NULL);
+	osThreadNew(connecting_flash_thread, NULL, NULL);  
+	osThreadNew(running_green_thread, NULL, NULL);  
+	osThreadNew(constant_green_thread, NULL, NULL);  
+	osThreadNew(flashing_red_thread, NULL, NULL);  
 	
 	// for wheels
 	osThreadNew(wheel_control_thread, NULL, NULL); 
