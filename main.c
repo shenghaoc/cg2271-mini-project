@@ -42,6 +42,16 @@
 #define UART_RX_PORTE1 1
 #define UART1_INT_PRIO 128
 
+#define c 261
+#define d 294 
+#define e 329 
+#define f 349
+#define g 392 
+#define a 440 
+#define b 493 
+#define C 523 
+
+
 // buzzer set LSB, LED set 2nd LSB
 osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, moving_flag;
 
@@ -49,6 +59,7 @@ osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, moving_flag
 osThreadId_t disconnecting_flag;
 
 // one device, different behavior for each connection state, working throughout
+// also
 osMutexId_t buzzerMutex, greenMutex;
 
 // Car does not move throughout, therefore use semaphore
@@ -65,6 +76,11 @@ volatile uint8_t y = 0;
 
 // can avoid two different functions for red LED since only delay changes
 volatile uint32_t delay = 0;
+
+
+int melody_connecting[] = {a, b, c,  d,  e, f,  g, C};
+int melody_connected[] = {C,  b,  g,  C,  b,   e,  C,  c,  g, a, C };
+int melody_disconnecting[] = {C,  b,  a,  g,  f,  e,  d,  c};
 
 
 void initGPIO(void) {
@@ -371,35 +387,12 @@ void connecting_tone_thread (void *argument){
 	//...
 	for (;;){
 		osEventFlagsWait(connecting_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
-		// 
 		osMutexAcquire(buzzerMutex, osWaitForever);
-		//262Hz (Note C)
-		generateSoundPWM1(262);
-		osDelay(2091752);
 
-		//294Hz (Note D)
-		generateSoundPWM1(294);
-		osDelay(2091752);
-
-		//330Hz (Note E)
-		generateSoundPWM1(330);		
-		osDelay(2091752);
-
-		//349Hz (Note F)
-		generateSoundPWM1(349);		
-		osDelay(2091752);
-
-		//392Hz (Note G)
-		generateSoundPWM1(392);
-		osDelay(2091752);
-
-		//440Hz (Note A)
-		generateSoundPWM1(440);
-		osDelay(2091752);
-
-		//494Hz (Note B)
-		generateSoundPWM1(494);
-		osDelay(2091752);		
+		for (int i = 0; i < 8; i++) {
+			generateSoundPWM1(melody_connecting[i]);
+			osDelay(1000);		
+		}
 
 		osMutexRelease(buzzerMutex);
 		osEventFlagsSet(connected_flag, 0x0000001);
@@ -412,33 +405,11 @@ void connected_tone_thread (void *argument){
 		// connected only after both connecting tone and green led flashed twice!
 		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
-		//262Hz (Note C)
-		generateSoundPWM1(262);
-		osDelay(2091752);
-
-		//294Hz (Note D)
-		generateSoundPWM1(294);	
-		osDelay(2091752);
-
-		//330Hz (Note E)
-		generateSoundPWM1(330);
-		osDelay(2091752);
-
-		//349Hz (Note F)
-		generateSoundPWM1(349);
-		osDelay(2091752);
-
-		//392Hz (Note G)
-		generateSoundPWM1(392);
-		osDelay(2091752);
-
-		//440Hz (Note A)
-		generateSoundPWM1(440);
-		osDelay(2091752);
-
-		//494Hz (Note B)
-		generateSoundPWM1(494);
-		osDelay(2091752);
+		
+		for (int i = 0; i < 11; i++) {
+			generateSoundPWM1(melody_connected[i]);
+			osDelay(1000);		
+		}
 
 		osMutexRelease(buzzerMutex);
 	}
@@ -449,34 +420,12 @@ void disconnecting_tone_thread (void *argument){
 	for (;;){
 		osEventFlagsWait(disconnecting_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
-		//262Hz (Note C)
-		generateSoundPWM1(262);
-		osDelay(2091752);
+		for (int i = 0; i < 8; i++) {
+			generateSoundPWM1(melody_disconnecting[i]);
+			osDelay(1000);		
+		}
 
-		//294Hz (Note D)
-		generateSoundPWM1(294);
-		osDelay(2091752);
-
-		//330Hz (Note E)
-		generateSoundPWM1(330);
-		osDelay(2091752);
-
-		//349Hz (Note F)
-		generateSoundPWM1(349);
-		osDelay(2091752);
-
-		//392Hz (Note G)
-		generateSoundPWM1(392);
-		osDelay(2091752);
-
-		//440Hz (Note A)
-		generateSoundPWM1(440);
-		osDelay(2091752);
-
-		//494Hz (Note B)
-		generateSoundPWM1(494);
-		osDelay(2091752);
-
+		generateSoundPWM1(0);
 		osMutexRelease(buzzerMutex);
 		osEventFlagsSet(disconnecting_flag, NULL);
 		osEventFlagsSet(disconnected_flag, 0x0000001);
