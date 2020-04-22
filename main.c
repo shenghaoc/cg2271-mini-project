@@ -51,10 +51,14 @@ osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, disconnecti
 
 
 // one device, different different behavior for each connection state, working throughout
-osMutexId_t buzzerMutex, greenMutex, redMutex;
+osMutexId_t buzzerMutex, greenMutex;
 
 // Car does not move throughout, therefore use semaphore
 osSemaphoreId_t mySem_Wheels;
+
+// tell red LED to change rate
+// can avoid two different functions since only rate changes
+osMessageQueueId_t redMsg;
 
 enum color_t{Red, Green};
 enum state_t{led_on, led_off};
@@ -62,6 +66,7 @@ enum state_t{led_on, led_off};
 volatile uint8_t rx_data = 0;
 volatile uint8_t x = 0;
 volatile uint8_t y = 0;
+volatile uint32_t delay = 0;
 
 
 void initGPIO(void) {
@@ -266,6 +271,7 @@ void UART1_IRQHandler(void) {
 			x = rx_data;
 			rx_data = UART1->D;
 			y = rx_data;
+			delay = 500;
 			osSemaphoreRelease(mySem_Wheels);
 		}
 	}
@@ -492,50 +498,50 @@ void running_green_thread (void *argument){
 		osEventFlagsWait(connected_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
 		osEventFlagsWait(moving_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(greenMutex, osWaitForever);
-		
+
 		// no function since only once
-		
-			PTC->PCOR = MASK(GREEN_LED_0);
-			osDelay(1000);
-			PTC->PSOR = MASK(GREEN_LED_0);
-			osDelay(1000);
-		
-			PTC->PCOR = MASK(GREEN_LED_1);
-			osDelay(1000);
-			PTC->PSOR = MASK(GREEN_LED_1);
-			osDelay(1000);
-		
-			PTA->PCOR = MASK(GREEN_LED_2);
-			osDelay(1000);
-			PTA->PSOR = MASK(GREEN_LED_2);
-			osDelay(1000);
-		
-			PTA->PCOR = MASK(GREEN_LED_3);
-			osDelay(1000);
-			PTA->PSOR = MASK(GREEN_LED_3);
-			osDelay(1000);
-			
-			PTA->PCOR = MASK(GREEN_LED_4);
-			osDelay(1000);
-			PTA->PSOR = MASK(GREEN_LED_4);
-			osDelay(1000);
-			
-			PTD->PCOR = MASK(GREEN_LED_5);
-			osDelay(1000);
-			PTD->PSOR = MASK(GREEN_LED_5);
-			osDelay(1000);
-			
-			PTA->PCOR = MASK(GREEN_LED_6);
-			osDelay(1000);
-			PTA->PSOR = MASK(GREEN_LED_6);
-			osDelay(1000);
-			
-			PTA->PCOR = MASK(GREEN_LED_7);
-			osDelay(1000);
-			PTA->PSOR = MASK(GREEN_LED_7);
-			osDelay(1000);
-		
-		
+
+		PTC->PCOR = MASK(GREEN_LED_0);
+		osDelay(1000);
+		PTC->PSOR = MASK(GREEN_LED_0);
+		osDelay(1000);
+
+		PTC->PCOR = MASK(GREEN_LED_1);
+		osDelay(1000);
+		PTC->PSOR = MASK(GREEN_LED_1);
+		osDelay(1000);
+
+		PTA->PCOR = MASK(GREEN_LED_2);
+		osDelay(1000);
+		PTA->PSOR = MASK(GREEN_LED_2);
+		osDelay(1000);
+
+		PTA->PCOR = MASK(GREEN_LED_3);
+		osDelay(1000);
+		PTA->PSOR = MASK(GREEN_LED_3);
+		osDelay(1000);
+
+		PTA->PCOR = MASK(GREEN_LED_4);
+		osDelay(1000);
+		PTA->PSOR = MASK(GREEN_LED_4);
+		osDelay(1000);
+
+		PTD->PCOR = MASK(GREEN_LED_5);
+		osDelay(1000);
+		PTD->PSOR = MASK(GREEN_LED_5);
+		osDelay(1000);
+
+		PTA->PCOR = MASK(GREEN_LED_6);
+		osDelay(1000);
+		PTA->PSOR = MASK(GREEN_LED_6);
+		osDelay(1000);
+
+		PTA->PCOR = MASK(GREEN_LED_7);
+		osDelay(1000);
+		PTA->PSOR = MASK(GREEN_LED_7);
+		osDelay(1000);
+
+
 		osMutexRelease(greenMutex);
 	}
 }
@@ -553,31 +559,27 @@ void constant_green_thread (void *argument){
 }
 
 void flashing_red_thread (void *argument){
-	//...
-	for (;;){
-		osEventFlagsWait(connecting_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
-		osMutexAcquire(greenMutex, osWaitForever);
-		// flash twice
-		for (int i = 0; i < 2; i++) {
-			led_control(Green, led_on);
-			osDelay(1000);
-			led_control(Green, led_off);
-			osDelay(1000);
-		}
-		osMutexRelease(greenMutex);
-		osEventFlagsSet(connected_flag, 0x0000002);
+	// ...
+	for (;;) {
+		osEventFlagsWait(connected_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		led_control(Red, led_on);
+		osDelay(delay);
+		led_control(Red, led_off);
+		osDelay(delay);
 	}
 }
+
 
 void wheel_control_thread (void *argument){
 	//...
 	for (;;){
 		osEventFlagsWait(connected_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
 		osSemaphoreAcquire(mySem_Wheels, osWaitForever);
-		
-		
-		
+
+
+
 		// Signal movement has finished
+		delay = 250;
 		osEventFlagsSet(moving_flag, NULL);
 	}
 }
@@ -592,6 +594,7 @@ void app_main (void *argument) {
 	for (;;) {
 		// wait for both buzzer and led to signal
 		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
+		delay = 250;
 		osEventFlagsSet(connecting_flag, NULL);
 	}
 }
@@ -613,33 +616,32 @@ int main (void) {
 	connected_flag = osEventFlagsNew(NULL);
 	disconnecting_flag = osEventFlagsNew(NULL);
 	moving_flag = osEventFlagsNew(NULL);
-	
+
 	// mutexes
 	buzzerMutex = osMutexNew(NULL);
 	greenMutex = osMutexNew(NULL);
-	redMutex = osMutexNew(NULL);
-	
+
 	// semaphores
 	mySem_Wheels = osSemaphoreNew(1,0,NULL);
-	
+
 	// threads
 	// for buzzer
 	osThreadNew(disconnecting_tone_thread, NULL, NULL);
 	osThreadNew(connecting_tone_thread, NULL, NULL); 
 	osThreadNew(connected_tone_thread, NULL, NULL);  
-	
+
 	// for LED
 	osThreadNew(connecting_flash_thread, NULL, NULL);  
 	osThreadNew(running_green_thread, NULL, NULL);  
 	osThreadNew(constant_green_thread, NULL, NULL);  
 	osThreadNew(flashing_red_thread, NULL, NULL);  
-	
+
 	// for wheels
 	osThreadNew(wheel_control_thread, NULL, NULL); 
-	
+
 	// synchronize connection events
 	osThreadNew(app_main, NULL, NULL);    // Create application main thread
-	
+
 	osKernelStart();                      // Start thread execution
 	for (;;) {}
 }
