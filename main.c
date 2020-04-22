@@ -474,7 +474,15 @@ void connecting_flash_thread (void *argument){
 			osDelay(1000);
 		}
 		osMutexRelease(greenMutex);
-		osEventFlagsSet(disconnected_flag, 0x0000002);
+		osEventFlagsSet(connected_flag, 0x0000002);
+	}
+}
+
+void wheel_control_thread (void *argument){
+	//...
+	for (;;){
+		osEventFlagsWait(connected_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		osSemaphoreAcquire(mySem_Wheels, osWaitForever);
 	}
 }
 
@@ -518,10 +526,18 @@ int main (void) {
 	mySem_Wheels = osSemaphoreNew(1,0,NULL);
 	
 	// threads
-	osThreadNew(connecting_flash_thread, NULL, NULL);    // Create application led_green
-	osThreadNew(connecting_tone_thread, NULL, NULL);    // Create application led_buzzer
-	osThreadNew(connected_tone_thread, NULL, NULL);    // Create application led_buzzer
-	osThreadNew(disconnecting_tone_thread, NULL, NULL);    // Create application led_buzzer
+	// for buzzer
+	osThreadNew(connecting_flash_thread, NULL, NULL);  
+	osThreadNew(connecting_tone_thread, NULL, NULL); 
+	osThreadNew(connected_tone_thread, NULL, NULL);  
+	
+	// for LED
+	osThreadNew(disconnecting_tone_thread, NULL, NULL);
+	
+	// for wheels
+	osThreadNew(wheel_control_thread, NULL, NULL); 
+	
+	// synchronize connection events
 	osThreadNew(app_main, NULL, NULL);    // Create application main thread
 	
 	osKernelStart();                      // Start thread execution
