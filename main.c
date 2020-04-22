@@ -5,6 +5,7 @@
 #include "RTE_Components.h"
 #include  CMSIS_device_header
 #include "cmsis_os2.h"
+#include <math.h>
 
 #define RED_LED_0 11 // Port C Pin 11
 #define RED_LED_1 10 // Port C Pin 10
@@ -76,7 +77,7 @@ volatile uint8_t y = 0;
 
 // can avoid two different functions for red LED since only delay changes
 volatile uint32_t delay = 0;
-
+double aux;
 
 int melody_connecting[] = {a, b, c,  d,  e, f,  g, C};
 int melody_connected[] = {C,  b,  g,  C,  b,   e,  C,  c,  g, a, C };
@@ -532,7 +533,19 @@ void wheel_control_thread (void *argument){
 	for (;;){
 		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
 		osSemaphoreAcquire(mySem_Wheels, osWaitForever);
-
+		
+		aux = pow(pow(x - 153, 2) + pow(153 - y, 2), 0.5);
+		if (x == 255 || y == 255) {
+			// stop
+		} else if (y < 153 && aux < 120 && y > 10) {
+			// turn somewhere?
+		} else if (y > 153 && aux < 120) {
+			// turn somewhere?
+		} else if (y > 153 && aux < 120) {
+			// turn somewhere?
+		} else if (y < 153 && aux < 120 && y > 10) {
+			// turn somewhere?
+		}
 
 
 		// Signal movement has finished
