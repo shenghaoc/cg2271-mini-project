@@ -46,12 +46,8 @@
 #define UART_RX_PORTE1 1
 #define UART1_INT_PRIO 128
 
-// 0: disconnected, 1: connecting, 2: connected, 3: disconnecting
-osEventFlagsId_t connected_flag;
-#define DISCONNECTED 0x0000000
-#define CONNECTING 0x0000001
-#define CONNECTED 0x0000002
-#define DISCONNECTING 0x0000003
+// buzzer set LSB, LED set 
+osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, disconnecting_flag;
 
 
 // one buzzer for 3 different connection states
@@ -260,9 +256,9 @@ void UART1_IRQHandler(void) {
 
 		// 1: connected, 2: disconnect
 		if (rx_data == 0x01) {
-			osEventFlagsSet(connected_flag, CONNECTING);
+			osEventFlagsSet(connecting_flag, 0x0000001);
 		} else if (rx_data == 0x03) {
-			osEventFlagsSet(connected_flag, DISCONNECTING);
+			osEventFlagsSet(disconnecting_flag, 0x0000001);
 		}
 	}
 }
@@ -343,7 +339,7 @@ void led_green_thread (void *argument){
 void connecting_tone_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(connected_flag, CONNECTING, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(connecting_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
 		// 
 		osMutexAcquire(buzzerMutex, osWaitForever);
 		//262Hz (Note C)
@@ -381,14 +377,14 @@ void connecting_tone_thread (void *argument){
 
 		delay();
 		osMutexRelease(buzzerMutex);
-		osEventFlagsSet(connected_flag, CONNECTED);
+		osEventFlagsSet(connected_flag, 0x0000001);
 	}
 }
 
 void connected_tone_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(connected_flag, CONNECTED, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 		//262Hz (Note C)
 		generateSoundPWM1(262);
@@ -431,7 +427,7 @@ void connected_tone_thread (void *argument){
 void disconnecting_tone_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(connected_flag, DISCONNECTING, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(disconnecting_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 		//262Hz (Note C)
 		generateSoundPWM1(262);
@@ -468,7 +464,7 @@ void disconnecting_tone_thread (void *argument){
 
 		delay();
 		osMutexRelease(buzzerMutex);
-		osEventFlagsSet(connected_flag, DISCONNECTED);
+		osEventFlagsSet(disconnected_flag, 0x0000001);
 	}
 }
 
@@ -492,7 +488,13 @@ int main (void) {
 	// ...
 
 	osKernelInitialize();                 // Initialize CMSIS-RTOS
+	// event flags
+	disconnected_flag = osEventFlagsNew(NULL);
+	osEventFlagsSet(disconnected_flag, 0x0000001);
+	connecting_flag = osEventFlagsNew(NULL);
 	connected_flag = osEventFlagsNew(NULL);
+	disconnecting_flag = osEventFlagsNew(NULL);
+	
 	mySem_Green = osSemaphoreNew(1,0,NULL);
 	mySem_Buzzer = osSemaphoreNew(1, 0, NULL);
 	buzzerMutex = osMutexNew(NULL);
