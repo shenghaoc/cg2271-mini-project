@@ -54,7 +54,7 @@ osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, disconnecti
 osMutexId_t buzzerMutex;
 
 
-enum color_t{Red, Green, Blue};
+enum color_t{Red, Green};
 enum state_t{led_on, led_off};
 
 volatile uint8_t rx_data = 0;
@@ -254,43 +254,69 @@ void UART1_IRQHandler(void) {
 	if ((UART1->S1 & UART_S1_RDRF_MASK)) {
 		rx_data = UART1->D;
 
-		// 1: connected, 2: disconnect
 		if (rx_data == 0x01) {
-			osEventFlagsSet(connecting_flag, 0x0000001);
+			osEventFlagsSet(connecting_flag, 0x0000003);
 		} else if (rx_data == 0x03) {
 			osEventFlagsSet(disconnecting_flag, 0x0000001);
 		}
 	}
 }
 
+// flash entire rows
 void led_control(enum color_t color, enum state_t state)
 {
 	if (state == led_on)
 	{
 		if (color == Red)
 		{
-			PTB->PCOR = MASK(RED_LED);
+			// all Cs
+			PTC->PCOR = MASK(RED_LED_0);
+			PTC->PCOR = MASK(RED_LED_1);
+			PTC->PCOR = MASK(RED_LED_2);
+			PTC->PCOR = MASK(RED_LED_3);
+			PTC->PCOR = MASK(RED_LED_4);
+			PTC->PCOR = MASK(RED_LED_5);
+			PTC->PCOR = MASK(RED_LED_6);
+			PTC->PCOR = MASK(RED_LED_7);
 		}
 		else if (color == Green) 
 		{
-			PTB->PCOR = MASK(GREEN_LED);
-		}
-		else if (color == Blue) {
-			PTD->PCOR = MASK(BLUE_LED);
+			// CCAAADAA
+			PTC->PCOR = MASK(GREEN_LED_0);
+			PTC->PCOR = MASK(GREEN_LED_1);
+			PTA->PCOR = MASK(GREEN_LED_2);
+			PTA->PCOR = MASK(GREEN_LED_3);
+			PTA->PCOR = MASK(GREEN_LED_4);
+			PTD->PCOR = MASK(GREEN_LED_5);
+			PTA->PCOR = MASK(GREEN_LED_6);
+			PTA->PCOR = MASK(GREEN_LED_7);
 		}
 	}
 	else
 	{
 		if (color == Red)
 		{
-			PTB->PSOR = MASK(RED_LED);
+			// all Cs
+			PTC->PSOR = MASK(RED_LED_0);
+			PTC->PSOR = MASK(RED_LED_1);
+			PTC->PSOR = MASK(RED_LED_2);
+			PTC->PSOR = MASK(RED_LED_3);
+			PTC->PSOR = MASK(RED_LED_4);
+			PTC->PSOR = MASK(RED_LED_5);
+			PTC->PSOR = MASK(RED_LED_6);
+			PTC->PSOR = MASK(RED_LED_7);
 		}
 		else if (color == Green) 
 		{
-			PTB->PSOR = MASK(GREEN_LED);
-		}
-		else if (color == Blue) {
-			PTD->PSOR = MASK(BLUE_LED);
+			// CCAAADAA
+			PTC->PSOR = MASK(GREEN_LED_0);
+			PTC->PSOR = MASK(GREEN_LED_1);
+			PTA->PSOR = MASK(GREEN_LED_2);
+			PTA->PSOR = MASK(GREEN_LED_3);
+			PTA->PSOR = MASK(GREEN_LED_4);
+			PTD->PSOR = MASK(GREEN_LED_5);
+			PTA->PSOR = MASK(GREEN_LED_6);
+			PTA->PSOR = MASK(GREEN_LED_7);
 		}
 	}
 }
@@ -361,9 +387,10 @@ void connecting_tone_thread (void *argument){
 
 		//494Hz (Note B)
 		generateSoundPWM1(494);
-		osDelay(2091752);		osDelay(2091752);
-		
+		osDelay(2091752);		
+
 		osMutexRelease(buzzerMutex);
+		osEventFlagsSet(connecting_flag, NULL);
 		osEventFlagsSet(connected_flag, 0x0000001);
 	}
 }
@@ -401,7 +428,7 @@ void connected_tone_thread (void *argument){
 		//494Hz (Note B)
 		generateSoundPWM1(494);
 		osDelay(2091752);
-		
+
 		osMutexRelease(buzzerMutex);
 	}
 }
@@ -438,7 +465,19 @@ void disconnecting_tone_thread (void *argument){
 		//494Hz (Note B)
 		generateSoundPWM1(494);
 		osDelay(2091752);
-		
+
+		osMutexRelease(buzzerMutex);
+		osEventFlagsSet(disconnecting_flag, NULL);
+		osEventFlagsSet(disconnected_flag, 0x0000001);
+	}
+}
+
+void connecting_flash_thread (void *argument){
+	//...
+	for (;;){
+		osEventFlagsWait(connecting_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		osMutexAcquire(buzzerMutex, osWaitForever);
+
 		osMutexRelease(buzzerMutex);
 		osEventFlagsSet(disconnected_flag, 0x0000001);
 	}
@@ -471,14 +510,19 @@ int main (void) {
 	connected_flag = osEventFlagsNew(NULL);
 	disconnecting_flag = osEventFlagsNew(NULL);
 	
-	mySem_Green = osSemaphoreNew(1,0,NULL);
-	mySem_Buzzer = osSemaphoreNew(1, 0, NULL);
+	// mutexes
 	buzzerMutex = osMutexNew(NULL);
-  osThreadNew(led_green_thread, NULL, NULL);    // Create application led_green
-  osThreadNew(connecting_tone_thread, NULL, NULL);    // Create application led_buzzer
-  osThreadNew(connected_tone_thread, NULL, NULL);    // Create application led_buzzer
-  osThreadNew(disconnecting_tone_thread, NULL, NULL);    // Create application led_buzzer
+
+	// semaphores
+	mySem_Green = osSemaphoreNew(1,0,NULL);
+	
+	// threads
+	osThreadNew(led_green_thread, NULL, NULL);    // Create application led_green
+	osThreadNew(connecting_tone_thread, NULL, NULL);    // Create application led_buzzer
+	osThreadNew(connected_tone_thread, NULL, NULL);    // Create application led_buzzer
+	osThreadNew(disconnecting_tone_thread, NULL, NULL);    // Create application led_buzzer
 	osThreadNew(app_main, NULL, NULL);    // Create application main thread
+	
 	osKernelStart();                      // Start thread execution
 	for (;;) {}
 }
