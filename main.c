@@ -269,7 +269,7 @@ void initUART1(uint32_t baud_rate)
 	UART1->C2 |= ((UART_C2_RE_MASK) | (UART_C2_RIE_MASK));
 
 	/* Enable Interrupts */
-	NVIC_SetPriority(UART1_IRQn, 128);
+	NVIC_SetPriority(UART1_IRQn, UART1_INT_PRIO);
 	NVIC_ClearPendingIRQ(UART1_IRQn);
 	NVIC_EnableIRQ(UART1_IRQn);
 
