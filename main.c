@@ -280,10 +280,9 @@ void UART1_IRQHandler(void) {
 		rx_data = UART1->D;
 
 		if (rx_data == 0x01) {
-			osEventFlagsSet(connecting_flag, 0x0000003);
+			osEventFlagsSet(connecting_flag, 0x0000001);
 		} else if (rx_data == 0x02) {
 			// press music icon to disconnect
-			osEventFlagsSet(connected_flag, NULL);
 			osEventFlagsSet(disconnecting_flag, 0x0000001);
 		} else {
 			x = rx_data;
@@ -418,6 +417,7 @@ void disconnecting_tone_thread (void *argument){
 	//...
 	for (;;){
 		osEventFlagsWait(disconnecting_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		osEventFlagsSet(connected_flag, NULL);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 		for (int i = 0; i < 8; i++) {
 			generateSoundPWM1(melody_disconnecting[i]);
