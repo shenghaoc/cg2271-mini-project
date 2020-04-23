@@ -408,7 +408,7 @@ void connected_tone_thread (void *argument){
 		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 		
-		i = (i == 17) ? 0 : i + 1;
+		i = (i == 10) ? 0 : i + 1;
 		generateSoundPWM1(melody_connected[i]);
 		osDelay(1000);		
 
