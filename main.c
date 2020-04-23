@@ -56,7 +56,7 @@
 // buzzer set LSB, LED set 2nd LSB
 osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, moving_flag;
 
-// only tone need to be played, disconnection tied to tone thread
+// no other action required at same time, so tied to thread
 osThreadId_t finish_tone_flag;
 
 // one device, different behavior for each connection state, working throughout
