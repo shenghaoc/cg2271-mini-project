@@ -54,7 +54,7 @@
 
 
 // buzzer set LSB, LED set 2nd LSB
-osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, moving_flag;
+osEventFlagsId_t connecting_flag, connected_flag, moving_flag;
 
 // no other action required at same time, so tied to thread
 osThreadId_t finish_tone_flag;
@@ -559,8 +559,6 @@ int main (void) {
 
 	osKernelInitialize();                 // Initialize CMSIS-RTOS
 	// event flags
-	disconnected_flag = osEventFlagsNew(NULL);
-	osEventFlagsSet(disconnected_flag, 0x0000001); // by default disconnected
 	connecting_flag = osEventFlagsNew(NULL);
 	connected_flag = osEventFlagsNew(NULL);
 	moving_flag = osEventFlagsNew(NULL);
