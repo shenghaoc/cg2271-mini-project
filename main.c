@@ -83,8 +83,9 @@ int melody_connecting[] = {a, b, c,  d,  e, f,  g, C};
 int melody_connected[] = {C,  b,  g,  C,  b,   e,  C,  c,  g, a, C };
 int melody_finish[] = {C,  b,  a,  g,  f,  e,  d,  c};
 
+// CCAAADAA
+GPIO_Type* green_LED_ports[] = {PTC, PTC, PTA, PTA, PTA, PTD, PTA, PTA};
 int green_LED[] = {GREEN_LED_0, GREEN_LED_1, GREEN_LED_2, GREEN_LED_3, GREEN_LED_4, GREEN_LED_5, GREEN_LED_6, GREEN_LED_7};
-
 
 void initGPIO(void) {
 	// Enable Clock to PORTA, PORTC and PORTD
@@ -456,9 +457,9 @@ void running_green_thread (void *argument){
 		osMutexAcquire(greenMutex, osWaitForever);
 		
 		i = (i == 7) ? 0 : i + 1;
-		PTC->PCOR = MASK(green_LED[i]);
+		green_LED_ports[i]->PCOR = MASK(green_LED[i]);
 		osDelay(1000);
-		PTC->PSOR = MASK(green_LED[i]);
+		green_LED_ports[i]->PSOR = MASK(green_LED[i]);
 		osDelay(1000);
 
 		osMutexRelease(greenMutex);
