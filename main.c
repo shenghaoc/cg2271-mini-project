@@ -84,8 +84,10 @@ int melody_connected[] = {C,  b,  g,  C,  b,   e,  C,  c,  g, a, C };
 int melody_finish[] = {C,  b,  a,  g,  f,  e,  d,  c};
 
 // CCAAADAA
-GPIO_Type* green_LED_ports[] = {PTC, PTC, PTA, PTA, PTA, PTD, PTA, PTA};
+GPIO_Type* green_LED_PT[] = {PTC, PTC, PTA, PTA, PTA, PTD, PTA, PTA};
+PORT_Type* green_LED_PORT[] = {PORTC, PORTC, PORTA, PORTA, PORTA, PORTD, PORTA, PORTA};
 int green_LED[] = {GREEN_LED_0, GREEN_LED_1, GREEN_LED_2, GREEN_LED_3, GREEN_LED_4, GREEN_LED_5, GREEN_LED_6, GREEN_LED_7};
+int red_LED[] = {RED_LED_0, RED_LED_1, RED_LED_2, RED_LED_3, RED_LED_4, RED_LED_5, RED_LED_6, RED_LED_7};
 
 void initGPIO(void) {
 	// Enable Clock to PORTA, PORTC and PORTD
@@ -95,76 +97,29 @@ void initGPIO(void) {
 	// Using the 2 rows at lower right
 
 	// First row
-	PORTC->PCR[RED_LED_0] &= ~PORT_PCR_MUX_MASK;
-	PORTC->PCR[RED_LED_0] |= PORT_PCR_MUX(1);
-
-	PORTC->PCR[RED_LED_1] &= ~PORT_PCR_MUX_MASK;
-	PORTC->PCR[RED_LED_1] |= PORT_PCR_MUX(1);
-
-	PORTC->PCR[RED_LED_2] &= ~PORT_PCR_MUX_MASK;
-	PORTC->PCR[RED_LED_2] |= PORT_PCR_MUX(1);
-
-	PORTC->PCR[RED_LED_3] &= ~PORT_PCR_MUX_MASK;
-	PORTC->PCR[RED_LED_3] |= PORT_PCR_MUX(1);
-
-	PORTC->PCR[RED_LED_4] &= ~PORT_PCR_MUX_MASK;
-	PORTC->PCR[RED_LED_4] |= PORT_PCR_MUX(1);
-
-	PORTC->PCR[RED_LED_5] &= ~PORT_PCR_MUX_MASK;
-	PORTC->PCR[RED_LED_5] |= PORT_PCR_MUX(1);
-
-	PORTC->PCR[RED_LED_6] &= ~PORT_PCR_MUX_MASK;
-	PORTC->PCR[RED_LED_6] |= PORT_PCR_MUX(1);
-
-	PORTC->PCR[RED_LED_7] &= ~PORT_PCR_MUX_MASK;
-	PORTC->PCR[RED_LED_7] |= PORT_PCR_MUX(1);
+	
+	for (int i = 0; i < 7; i++) {
+		PORTC->PCR[red_LED[i]] &= ~PORT_PCR_MUX_MASK;
+		PORTC->PCR[red_LED[i]] |= PORT_PCR_MUX(1);
+	}
 
 	// Second row
-	PORTC->PCR[GREEN_LED_0] &= ~PORT_PCR_MUX_MASK;
-	PORTC->PCR[GREEN_LED_0] |= PORT_PCR_MUX(1);
-
-	PORTC->PCR[GREEN_LED_1] &= ~PORT_PCR_MUX_MASK;
-	PORTC->PCR[GREEN_LED_1] |= PORT_PCR_MUX(1);
-
-	PORTA->PCR[GREEN_LED_2] &= ~PORT_PCR_MUX_MASK;
-	PORTA->PCR[GREEN_LED_2] |= PORT_PCR_MUX(1);
-
-	PORTA->PCR[GREEN_LED_3] &= ~PORT_PCR_MUX_MASK;
-	PORTA->PCR[GREEN_LED_3] |= PORT_PCR_MUX(1);
-
-	PORTA->PCR[GREEN_LED_4] &= ~PORT_PCR_MUX_MASK;
-	PORTA->PCR[GREEN_LED_4] |= PORT_PCR_MUX(1);
-
-	PORTD->PCR[GREEN_LED_5] &= ~PORT_PCR_MUX_MASK;
-	PORTD->PCR[GREEN_LED_5] |= PORT_PCR_MUX(1);
-
-	PORTA->PCR[GREEN_LED_6] &= ~PORT_PCR_MUX_MASK;
-	PORTA->PCR[GREEN_LED_6] |= PORT_PCR_MUX(1);
-
-	PORTA->PCR[GREEN_LED_7] &= ~PORT_PCR_MUX_MASK;
-	PORTA->PCR[GREEN_LED_7] |= PORT_PCR_MUX(1);
+	for (int i = 0; i < 7; i++) {
+		green_LED_PORT[i]->PCR[green_LED[i]] &= ~PORT_PCR_MUX_MASK;
+		green_LED_PORT[i]->PCR[green_LED[i]] |= PORT_PCR_MUX(1);
+	}
 
 	// Set Data Direction Registers for PortB and PortD
 
 	// First row
-	PTC->PDDR |= MASK(RED_LED_0);
-	PTC->PDDR |= MASK(RED_LED_1);
-	PTC->PDDR |= MASK(RED_LED_2);
-	PTC->PDDR |= MASK(RED_LED_3);
-	PTC->PDDR |= MASK(RED_LED_4);
-	PTC->PDDR |= MASK(RED_LED_5);
-	PTC->PDDR |= MASK(RED_LED_6);
-	PTC->PDDR |= MASK(RED_LED_7);
+	for (int i = 0; i < 7; i++) {
+		PTC->PDDR |= MASK(red_LED[i]);
+	}
 
-	// Second row
-	PTC->PDDR |= MASK(GREEN_LED_0);
-	PTC->PDDR |= MASK(GREEN_LED_1);
-	PTA->PDDR |= MASK(GREEN_LED_2);
-	PTA->PDDR |= MASK(GREEN_LED_3);
-	PTA->PDDR |= MASK(GREEN_LED_4);
-	PTD->PDDR |= MASK(GREEN_LED_5);
-	PTA->PDDR |= MASK(GREEN_LED_6);
-	PTA->PDDR |= MASK(GREEN_LED_7);
+	// Second row	
+	for (int i = 0; i < 7; i++) {
+		green_LED_PT[i]->PDDR |= MASK(green_LED[i]);
+	}
 }
 
 void initPWM(void){
@@ -304,26 +259,16 @@ void led_control(enum color_t color, enum state_t state)
 		if (color == Red)
 		{
 			// all Cs
-			PTC->PCOR = MASK(RED_LED_0);
-			PTC->PCOR = MASK(RED_LED_1);
-			PTC->PCOR = MASK(RED_LED_2);
-			PTC->PCOR = MASK(RED_LED_3);
-			PTC->PCOR = MASK(RED_LED_4);
-			PTC->PCOR = MASK(RED_LED_5);
-			PTC->PCOR = MASK(RED_LED_6);
-			PTC->PCOR = MASK(RED_LED_7);
+			for (int i = 0; i < 7; i++) {
+				PTC->PCOR = MASK(red_LED[i]);
+			}
 		}
 		else if (color == Green) 
 		{
 			// CCAAADAA
-			PTC->PCOR = MASK(GREEN_LED_0);
-			PTC->PCOR = MASK(GREEN_LED_1);
-			PTA->PCOR = MASK(GREEN_LED_2);
-			PTA->PCOR = MASK(GREEN_LED_3);
-			PTA->PCOR = MASK(GREEN_LED_4);
-			PTD->PCOR = MASK(GREEN_LED_5);
-			PTA->PCOR = MASK(GREEN_LED_6);
-			PTA->PCOR = MASK(GREEN_LED_7);
+			for (int i = 0; i < 7; i++) {
+				green_LED_PT[i]->PCOR = MASK(green_LED[i]);
+			}
 		}
 	}
 	else
@@ -331,26 +276,16 @@ void led_control(enum color_t color, enum state_t state)
 		if (color == Red)
 		{
 			// all Cs
-			PTC->PSOR = MASK(RED_LED_0);
-			PTC->PSOR = MASK(RED_LED_1);
-			PTC->PSOR = MASK(RED_LED_2);
-			PTC->PSOR = MASK(RED_LED_3);
-			PTC->PSOR = MASK(RED_LED_4);
-			PTC->PSOR = MASK(RED_LED_5);
-			PTC->PSOR = MASK(RED_LED_6);
-			PTC->PSOR = MASK(RED_LED_7);
+			for (int i = 0; i < 7; i++) {
+				PTC->PSOR = MASK(red_LED[i]);
+			}
 		}
 		else if (color == Green) 
 		{
 			// CCAAADAA
-			PTC->PSOR = MASK(GREEN_LED_0);
-			PTC->PSOR = MASK(GREEN_LED_1);
-			PTA->PSOR = MASK(GREEN_LED_2);
-			PTA->PSOR = MASK(GREEN_LED_3);
-			PTA->PSOR = MASK(GREEN_LED_4);
-			PTD->PSOR = MASK(GREEN_LED_5);
-			PTA->PSOR = MASK(GREEN_LED_6);
-			PTA->PSOR = MASK(GREEN_LED_7);
+			for (int i = 0; i < 7; i++) {
+				green_LED_PT[i]->PSOR = MASK(green_LED[i]);
+			}
 		}
 	}
 }
@@ -457,9 +392,9 @@ void running_green_thread (void *argument){
 		osMutexAcquire(greenMutex, osWaitForever);
 		
 		i = (i == 7) ? 0 : i + 1;
-		green_LED_ports[i]->PCOR = MASK(green_LED[i]);
+		green_LED_PT[i]->PCOR = MASK(green_LED[i]);
 		osDelay(1000);
-		green_LED_ports[i]->PSOR = MASK(green_LED[i]);
+		green_LED_PT[i]->PSOR = MASK(green_LED[i]);
 		osDelay(1000);
 
 		osMutexRelease(greenMutex);
