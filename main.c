@@ -402,15 +402,15 @@ void connecting_tone_thread (void *argument){
 
 void connected_tone_thread (void *argument){
 	//...
+	int i = 0;
 	for (;;){
 		// connected only after both connecting tone and green led flashed twice!
 		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 		
-		for (int i = 0; i < 11; i++) {
-			generateSoundPWM1(melody_connected[i]);
-			osDelay(1000);		
-		}
+		i = (i == 17) ? 0 : i + 1;
+		generateSoundPWM1(melody_connected[i]);
+		osDelay(1000);		
 
 		osMutexRelease(buzzerMutex);
 	}
