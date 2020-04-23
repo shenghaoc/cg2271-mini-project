@@ -289,9 +289,7 @@ void UART1_IRQHandler(void) {
 			x = rx_data;
 			rx_data = UART1->D;
 			y = rx_data;
-			delay = 500;
 			osSemaphoreRelease(mySem_Wheels);
-			osEventFlagsSet(moving_flag, 0x0000001);
 		}
 	}
 }
@@ -533,6 +531,8 @@ void wheel_control_thread (void *argument){
 	for (;;){
 		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
 		osSemaphoreAcquire(mySem_Wheels, osWaitForever);
+		delay = 500;
+		osEventFlagsSet(moving_flag, 0x0000001);
 		
 		aux = pow(pow(x - 153, 2) + pow(153 - y, 2), 0.5);
 		if (x == 255 || y == 255) {
