@@ -469,7 +469,7 @@ void running_green_thread (void *argument){
 void constant_green_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(moving_flag, NULL, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
 		osMutexAcquire(greenMutex, osWaitForever);
 		// always on
 		led_control(Green, led_on);
