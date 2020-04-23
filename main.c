@@ -247,7 +247,7 @@ void UART1_IRQHandler(void) {
 			osEventFlagsSet(connecting_flag, 0x0000001);
 		} else if (rx_data == 0x02) {
 			// press music icon to play finish tone
-			osEventFlagsSet(finish_tone_flag, 0x0000001);
+			osThreadFlagsSet(finish_tone_flag, 0x0001);
 		} else {
 			myDataPkt myData;
 			myData.x = rx_data;
@@ -362,7 +362,7 @@ void connected_tone_thread (void *argument){
 void finish_tone_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(finish_tone_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 		
 		for (int i = 0; i < 8; i++) {
@@ -371,7 +371,7 @@ void finish_tone_thread (void *argument){
 		}
 
 		osMutexRelease(buzzerMutex);
-		osEventFlagsSet(finish_tone_flag, NULL);
+		osThreadFlagsSet(finish_tone_flag, NULL);
 	}
 }
 
