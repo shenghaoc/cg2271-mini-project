@@ -1,4 +1,5 @@
-/.uvguix/
+/*.uvguix.*/
+/.uvoptx/
 /Listings/
 /Objects/
 /.scvd/
