@@ -529,8 +529,8 @@ void wheel_control_thread (void *argument){
 	for (;;){
 		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
 		osSemaphoreAcquire(mySem_Wheels, osWaitForever);
-		delay = 500;
 		osEventFlagsSet(moving_flag, 0x0000001);
+		delay = 500;
 		
 		aux = pow(pow(x - 153, 2) + pow(153 - y, 2), 0.5);
 		if (x == 255 || y == 255) {
@@ -562,8 +562,8 @@ void app_main (void *argument) {
 	for (;;) {
 		// wait for both buzzer and led to signal
 		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
-		delay = 250;
 		osEventFlagsSet(connecting_flag, NULL);
+		delay = 250;
 	}
 }
 
