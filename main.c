@@ -268,14 +268,14 @@ void led_control(enum color_t color, enum state_t state)
 		{
 			// all Cs
 			for (int i = 0; i < 7; i++) {
-				PTC->PCOR = MASK(red_LED[i]);
+				PTC->PSOR = MASK(red_LED[i]);
 			}
 		}
 		else if (color == Green) 
 		{
 			// CCAAADAA
 			for (int i = 0; i < 7; i++) {
-				green_LED_PT[i]->PCOR = MASK(green_LED[i]);
+				green_LED_PT[i]->PSOR = MASK(green_LED[i]);
 			}
 		}
 	}
@@ -285,14 +285,14 @@ void led_control(enum color_t color, enum state_t state)
 		{
 			// all Cs
 			for (int i = 0; i < 7; i++) {
-				PTC->PSOR = MASK(red_LED[i]);
+				PTC->PCOR = MASK(red_LED[i]);
 			}
 		}
 		else if (color == Green) 
 		{
 			// CCAAADAA
 			for (int i = 0; i < 7; i++) {
-				green_LED_PT[i]->PSOR = MASK(green_LED[i]);
+				green_LED_PT[i]->PCOR = MASK(green_LED[i]);
 			}
 		}
 	}
@@ -400,9 +400,9 @@ void running_green_thread (void *argument){
 		osMutexAcquire(greenMutex, osWaitForever);
 		
 		i = (i == 7) ? 0 : i + 1;
-		green_LED_PT[i]->PCOR = MASK(green_LED[i]);
-		osDelay(1000);
 		green_LED_PT[i]->PSOR = MASK(green_LED[i]);
+		osDelay(1000);
+		green_LED_PT[i]->PCOR = MASK(green_LED[i]);
 		osDelay(1000);
 
 		osMutexRelease(greenMutex);
