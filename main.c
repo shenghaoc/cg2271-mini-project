@@ -57,7 +57,7 @@
 osEventFlagsId_t disconnected_flag, connecting_flag, connected_flag, moving_flag;
 
 // only tone need to be played, disconnection tied to tone thread
-osThreadId_t disconnecting_flag;
+osThreadId_t finish_tone_flag;
 
 // one device, different behavior for each connection state, working throughout
 // also
@@ -81,7 +81,7 @@ double aux;
 
 int melody_connecting[] = {a, b, c,  d,  e, f,  g, C};
 int melody_connected[] = {C,  b,  g,  C,  b,   e,  C,  c,  g, a, C };
-int melody_disconnecting[] = {C,  b,  a,  g,  f,  e,  d,  c};
+int melody_finish[] = {C,  b,  a,  g,  f,  e,  d,  c};
 
 
 void initGPIO(void) {
@@ -282,8 +282,8 @@ void UART1_IRQHandler(void) {
 		if (rx_data == 0x01) {
 			osEventFlagsSet(connecting_flag, 0x0000001);
 		} else if (rx_data == 0x02) {
-			// press music icon to disconnect
-			osEventFlagsSet(disconnecting_flag, 0x0000001);
+			// press music icon to play finish tone
+			osEventFlagsSet(finish_tone_flag, 0x0000001);
 		} else {
 			x = rx_data;
 			rx_data = UART1->D;
@@ -413,21 +413,19 @@ void connected_tone_thread (void *argument){
 	}
 }
 
-void disconnecting_tone_thread (void *argument){
+void finish_tone_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(disconnecting_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
-		osEventFlagsSet(connected_flag, NULL);
+		osEventFlagsWait(finish_tone_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
+		
 		for (int i = 0; i < 8; i++) {
-			generateSoundPWM1(melody_disconnecting[i]);
+			generateSoundPWM1(melody_finish[i]);
 			osDelay(1000);		
 		}
 
-		generateSoundPWM1(0);
 		osMutexRelease(buzzerMutex);
-		osEventFlagsSet(disconnecting_flag, NULL);
-		osEventFlagsSet(disconnected_flag, 0x0000001);
+		osEventFlagsSet(finish_tone_flag, NULL);
 	}
 }
 
@@ -599,7 +597,7 @@ int main (void) {
 	 */
 
 	// for buzzer
-	disconnecting_flag = osThreadNew(disconnecting_tone_thread, NULL, NULL);
+	finish_tone_flag = osThreadNew(finish_tone_thread, NULL, NULL);
 	osThreadNew(connecting_tone_thread, NULL, NULL); 
 	osThreadNew(connected_tone_thread, NULL, NULL);  
 
