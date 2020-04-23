@@ -76,7 +76,7 @@ volatile uint8_t x = 0;
 volatile uint8_t y = 0;
 
 // can avoid two different functions for red LED since only delay changes
-volatile uint32_t delay = 0;
+volatile uint32_t delay = 250;
 double aux;
 
 int melody_connecting[] = {a, b, c,  d,  e, f,  g, C};
@@ -528,7 +528,6 @@ void app_main (void *argument) {
 		// wait for both buzzer and led to signal
 		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
 		osEventFlagsSet(connecting_flag, NULL);
-		delay = 250;
 	}
 }
 
