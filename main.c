@@ -402,7 +402,7 @@ void connected_tone_thread (void *argument){
 	//...
 	for (;;){
 		// connected only after both connecting tone and green led flashed twice!
-		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 		
 		for (int i = 0; i < 11; i++) {
@@ -451,7 +451,7 @@ void connecting_flash_thread (void *argument){
 void running_green_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
 		osEventFlagsWait(moving_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(greenMutex, osWaitForever);
 
@@ -505,7 +505,7 @@ void running_green_thread (void *argument){
 void constant_green_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
 		osEventFlagsWait(moving_flag, NULL, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(greenMutex, osWaitForever);
 		// always on
@@ -517,7 +517,7 @@ void constant_green_thread (void *argument){
 void flashing_red_thread (void *argument){
 	// ...
 	for (;;) {
-		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
 		led_control(Red, led_on);
 		osDelay(delay);
 		led_control(Red, led_off);
@@ -529,7 +529,7 @@ void flashing_red_thread (void *argument){
 void wheel_control_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
 		osSemaphoreAcquire(mySem_Wheels, osWaitForever);
 		delay = 500;
 		osEventFlagsSet(moving_flag, 0x0000001);
