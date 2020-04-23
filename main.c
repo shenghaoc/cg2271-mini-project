@@ -567,6 +567,21 @@ void app_main (void *argument) {
 	}
 }
 
+// Need to be higher priority than normal tone
+osThreadAttr_t finish_attr = {
+	.priority = osPriorityNormal1
+};
+
+// When car is moving, the other thread shouldn't run at all
+osThreadAttr_t moving_attr = {
+	.priority = osPriorityNormal1
+};
+
+// Everything else is secondary to car movement
+osThreadAttr_t wheels_attr = {
+	.priority = osPriorityHigh
+};
+
 int main (void) {
 
 	// System Initialization
@@ -597,18 +612,18 @@ int main (void) {
 	 */
 
 	// for buzzer
-	finish_tone_flag = osThreadNew(finish_tone_thread, NULL, NULL);
+	finish_tone_flag = osThreadNew(finish_tone_thread, NULL, &finish_attr);
 	osThreadNew(connecting_tone_thread, NULL, NULL); 
 	osThreadNew(connected_tone_thread, NULL, NULL);  
 
 	// for LED
 	osThreadNew(connecting_flash_thread, NULL, NULL);  
-	osThreadNew(running_green_thread, NULL, NULL);  
+	osThreadNew(running_green_thread, NULL, &moving_attr);  
 	osThreadNew(constant_green_thread, NULL, NULL);  
 	osThreadNew(flashing_red_thread, NULL, NULL);  
 
 	// for wheels
-	osThreadNew(wheel_control_thread, NULL, NULL); 
+	osThreadNew(wheel_control_thread, NULL, &wheels_attr); 
 
 	// synchronize connection events
 	osThreadNew(app_main, NULL, NULL);    // Create application main thread
