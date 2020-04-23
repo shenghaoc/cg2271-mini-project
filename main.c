@@ -7,6 +7,8 @@
 #include "cmsis_os2.h"
 #include <math.h>
 
+#define MSG_COUNT 1
+
 #define RED_LED_0 11 // Port C Pin 11
 #define RED_LED_1 10 // Port C Pin 10
 #define RED_LED_2 6 // Port C Pin 6
@@ -72,8 +74,12 @@ enum state_t{led_on, led_off};
 volatile uint8_t rx_data = 0;
 
 // coordinates
-volatile uint8_t x = 0;
-volatile uint8_t y = 0;
+typedef struct {
+	uint8_t x;
+	uint8_t y;
+} myDataPkt;
+
+osMessageQueueId_t coordMsg;
 
 // can avoid two different functions for red LED since only delay changes
 volatile uint32_t delay = 250;
@@ -243,9 +249,11 @@ void UART1_IRQHandler(void) {
 			// press music icon to play finish tone
 			osEventFlagsSet(finish_tone_flag, 0x0000001);
 		} else {
-			x = rx_data;
+			myDataPkt myData;
+			myData.x = rx_data;
 			rx_data = UART1->D;
-			y = rx_data;
+			myData.y = rx_data;
+			osMessageQueuePut(coordMsg, &myData, NULL, 0);
 			osSemaphoreRelease(mySem_Wheels);
 		}
 	}
@@ -426,9 +434,14 @@ void flashing_red_thread (void *argument){
 
 void wheel_control_thread (void *argument){
 	//...
+	myDataPkt myRXData;
+	uint32_t x;
+	uint32_t y;
 	for (;;){
-		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
 		osSemaphoreAcquire(mySem_Wheels, osWaitForever);
+		osMessageQueueGet(coordMsg, &myRXData, NULL, osWaitForever);
+		x = myRXData.x;
+		y = myRXData.y;
 		osEventFlagsSet(moving_flag, 0x0000001);
 		delay = 500;
 		
@@ -503,6 +516,10 @@ int main (void) {
 
 	// semaphores
 	mySem_Wheels = osSemaphoreNew(1,0,NULL);
+	
+	// messages
+	
+	coordMsg = osMessageQueueNew(MSG_COUNT, sizeof(myDataPkt), NULL);
 
 	/*
 	 *	threads
