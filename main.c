@@ -83,6 +83,8 @@ int melody_connecting[] = {a, b, c,  d,  e, f,  g, C};
 int melody_connected[] = {C,  b,  g,  C,  b,   e,  C,  c,  g, a, C };
 int melody_finish[] = {C,  b,  a,  g,  f,  e,  d,  c};
 
+int green_LED[] = {GREEN_LED_0, GREEN_LED_1, GREEN_LED_2, GREEN_LED_3, GREEN_LED_4, GREEN_LED_5, GREEN_LED_6, GREEN_LED_7};
+
 
 void initGPIO(void) {
 	// Enable Clock to PORTA, PORTC and PORTD
@@ -448,53 +450,16 @@ void connecting_flash_thread (void *argument){
 
 void running_green_thread (void *argument){
 	//...
+	int i = 0;
 	for (;;){
-		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
 		osEventFlagsWait(moving_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(greenMutex, osWaitForever);
-
-		// no function since only once
-
-		PTC->PCOR = MASK(GREEN_LED_0);
+		
+		i = (i == 7) ? 0 : i + 1;
+		PTC->PCOR = MASK(green_LED[i]);
 		osDelay(1000);
-		PTC->PSOR = MASK(GREEN_LED_0);
+		PTC->PSOR = MASK(green_LED[i]);
 		osDelay(1000);
-
-		PTC->PCOR = MASK(GREEN_LED_1);
-		osDelay(1000);
-		PTC->PSOR = MASK(GREEN_LED_1);
-		osDelay(1000);
-
-		PTA->PCOR = MASK(GREEN_LED_2);
-		osDelay(1000);
-		PTA->PSOR = MASK(GREEN_LED_2);
-		osDelay(1000);
-
-		PTA->PCOR = MASK(GREEN_LED_3);
-		osDelay(1000);
-		PTA->PSOR = MASK(GREEN_LED_3);
-		osDelay(1000);
-
-		PTA->PCOR = MASK(GREEN_LED_4);
-		osDelay(1000);
-		PTA->PSOR = MASK(GREEN_LED_4);
-		osDelay(1000);
-
-		PTD->PCOR = MASK(GREEN_LED_5);
-		osDelay(1000);
-		PTD->PSOR = MASK(GREEN_LED_5);
-		osDelay(1000);
-
-		PTA->PCOR = MASK(GREEN_LED_6);
-		osDelay(1000);
-		PTA->PSOR = MASK(GREEN_LED_6);
-		osDelay(1000);
-
-		PTA->PCOR = MASK(GREEN_LED_7);
-		osDelay(1000);
-		PTA->PSOR = MASK(GREEN_LED_7);
-		osDelay(1000);
-
 
 		osMutexRelease(greenMutex);
 	}
@@ -503,7 +468,6 @@ void running_green_thread (void *argument){
 void constant_green_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
 		osEventFlagsWait(moving_flag, NULL, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(greenMutex, osWaitForever);
 		// always on
