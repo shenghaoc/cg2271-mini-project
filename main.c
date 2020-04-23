@@ -7,7 +7,7 @@
 #include "cmsis_os2.h"
 #include <math.h>
 
-#define MSG_COUNT 1
+#define MSG_COUNT 2
 
 #define RED_LED_0 11 // Port C Pin 11
 #define RED_LED_1 10 // Port C Pin 10
@@ -29,16 +29,16 @@
 
 #define MASK(x) (1 << (x))
 
-#define BUZZER_PIN 0
+#define BUZZER_PIN 0 // Port B Pin 0 -> TPM1_CH0
 
-#define LEFT_FRONT_WHEEL_PIN1 2
-#define LEFT__FRONT_WHEEL_PIN2 3
-#define RIGHT__FRONT_WHEEL_PIN1 29
-#define RIGHT__FRONT_WHEEL_PIN2 30
-#define LEFT_BACK_WHEEL_PIN1 31
-#define LEFT_BACK_WHEEL_PIN2 24
-#define RIGHT_BACK_WHEEL_PIN1 25
-#define RIGHT_BACK_WHEEL_PIN2 0
+#define LEFT_FRONT_WHEEL_PIN1 2 // Port B Pin 2 -> TPM2_CH0
+#define LEFT__FRONT_WHEEL_PIN2 3 // Port B Pin 3 -> TPM2_CH1
+#define RIGHT__FRONT_WHEEL_PIN1 0 // Port D Pin 0 -> TPM0_CH0
+#define RIGHT__FRONT_WHEEL_PIN2 1 // Port D Pin 1 -> TPM0_CH1
+#define LEFT_BACK_WHEEL_PIN1 2 // Port D Pin 2 -> TPM0_CH2
+#define LEFT_BACK_WHEEL_PIN2 3 // Port D Pin 3 -> TPM0_CH3
+#define RIGHT_BACK_WHEEL_PIN1 4 // Port D Pin 4 -> TPM0_CH4
+#define RIGHT_BACK_WHEEL_PIN2 5 // Port D Pin 5 -> TPM0_CH5
 
 #define BAUD_RATE 9600
 #define UART_TX_PORTE0 0
@@ -515,7 +515,7 @@ int main (void) {
 	greenMutex = osMutexNew(NULL);
 
 	// semaphores
-	mySem_Wheels = osSemaphoreNew(1,0,NULL);
+	mySem_Wheels = osSemaphoreNew(MSG_COUNT,0,NULL);
 	
 	// messages
 	
