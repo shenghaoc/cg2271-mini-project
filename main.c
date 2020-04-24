@@ -71,6 +71,8 @@ enum color_t{Red, Green};
 enum state_t{led_on, led_off};
 
 volatile uint8_t rx_data = 0;
+volatile uint8_t got_x = 0;
+volatile uint8_t stored_x = 0;
 
 // coordinates
 typedef struct {
@@ -255,12 +257,20 @@ void UART1_IRQHandler(void) {
 			// press music icon to play finish tone
 			osThreadFlagsSet(finish_tone_flag, 0x0001);
 		} else {
-			myDataPkt myData;
-			myData.x = rx_data;
-			rx_data = UART1->D;
-			myData.y = rx_data;
-			osMessageQueuePut(coordMsg, &myData, NULL, 0);
-			osSemaphoreRelease(mySem_Wheels);
+			if (got_x == 1) {
+				got_x = 0;
+				myDataPkt myData;
+				myData.x = stored_x;
+				myData.y = rx_data;
+				osMessageQueuePut(coordMsg, &myData, NULL, 0);
+				osSemaphoreRelease(mySem_Wheels);
+			} else {
+				myDataPkt myData;
+				stored_x = rx_data;
+				got_x = 1;
+			}
+
+
 		}
 	}
 }
