@@ -58,7 +58,7 @@
 osEventFlagsId_t connected_flag, moving_flag;
 
 // no other action required at same time, so tied to thread
-osThreadId_t finish_tone_flag,connecting_tone_flag, connecting_flash_flag;
+osThreadId_t finish_tone_flag,connecting_tone_flag, connecting_flash_flag, running_green_thread_Id;
 
 // one device, different behavior for each connection state, working throughout
 // also
@@ -456,11 +456,9 @@ void constant_green_thread (void *argument){
 	//...
 	for (;;){
 		osEventFlagsWait(connected_flag, 0x0000003, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
-		if (osEventFlagsGet(moving_flag) != 0x0000001) {
-			osMutexAcquire(greenMutex, osWaitForever);
-			// always on
-			led_control(Green, led_on);
-		}
+		osMutexAcquire(greenMutex, osWaitForever);
+		// always on
+		led_control(Green, led_on);
 		osMutexRelease(greenMutex);
 	}
 }
@@ -485,6 +483,7 @@ void wheel_control_thread (void *argument){
 	for (;;){
 		osSemaphoreAcquire(mySem_Wheels, osWaitForever);
 		osMessageQueueGet(coordMsg, &myRXData, NULL, osWaitForever);
+		osThreadSuspend(running_green_thread_Id);
 		osEventFlagsSet(moving_flag, 0x0000001);
 		x = myRXData.x;
 		y = myRXData.y;
@@ -494,6 +493,7 @@ void wheel_control_thread (void *argument){
 
 
 		// Signal movement has finished
+		osThreadResume(running_green_thread_Id);
 		osEventFlagsClear(moving_flag, 0x0000001);
 		delay = 250;
 	}
@@ -551,7 +551,7 @@ int main (void) {
 
 	// for LED
 	connecting_flash_flag = osThreadNew(connecting_flash_thread, NULL, NULL);  
-	osThreadNew(running_green_thread, NULL, &moving_attr);  
+	running_green_thread_Id = osThreadNew(running_green_thread, NULL, &moving_attr);  
 	osThreadNew(constant_green_thread, NULL, NULL);  
 	osThreadNew(flashing_red_thread, NULL, NULL);  
 
