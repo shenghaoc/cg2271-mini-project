@@ -36,8 +36,8 @@
 #define RIGHT__FRONT_WHEEL_PIN1 29 // Port E Pin 29 -> TPM0_CH2
 #define RIGHT__FRONT_WHEEL_PIN2 30 // Port E Pin 30 -> TPM0_CH3
 #define LEFT_BACK_WHEEL_PIN1 31 // Port E Pin 31 -> TPM0_CH4
-#define LEFT_BACK_WHEEL_PIN2 24 // Port E Pin 24 -> TPM0_CH0
-#define RIGHT_BACK_WHEEL_PIN1 25 // Port E Pin 25 -> TPM0_CH1
+#define LEFT_BACK_WHEEL_PIN2 1 // Port C Pin 1 -> TPM0_CH0
+#define RIGHT_BACK_WHEEL_PIN1 2 // Port C Pin 2 -> TPM0_CH1
 #define RIGHT_BACK_WHEEL_PIN2 5 // Port D Pin 5 -> TPM0_CH5
 
 #define BAUD_RATE 9600
@@ -104,13 +104,13 @@ void initGPIO(void) {
 
 	// First row
 	
-	for (int i = 0; i < 7; i++) {
+	for (int i = 0; i < 8; i++) {
 		PORTC->PCR[red_LED[i]] &= ~PORT_PCR_MUX_MASK;
 		PORTC->PCR[red_LED[i]] |= PORT_PCR_MUX(1);
 	}
 
 	// Second row
-	for (int i = 0; i < 7; i++) {
+	for (int i = 0; i < 8; i++) {
 		green_LED_PORT[i]->PCR[green_LED[i]] &= ~PORT_PCR_MUX_MASK;
 		green_LED_PORT[i]->PCR[green_LED[i]] |= PORT_PCR_MUX(1);
 	}
@@ -118,12 +118,12 @@ void initGPIO(void) {
 	// Set Data Direction Registers for PortB and PortD
 
 	// First row
-	for (int i = 0; i < 7; i++) {
+	for (int i = 0; i < 8; i++) {
 		PTC->PDDR |= MASK(red_LED[i]);
 	}
 
 	// Second row	
-	for (int i = 0; i < 7; i++) {
+	for (int i = 0; i < 8; i++) {
 		green_LED_PT[i]->PDDR |= MASK(green_LED[i]);
 	}
 }
@@ -131,7 +131,7 @@ void initGPIO(void) {
 void initPWM(void){
 
 	//Enable clock for Ports A, B and E
-	SIM_SCGC5 |= ((SIM_SCGC5_PORTD_MASK) | (SIM_SCGC5_PORTB_MASK) | (SIM_SCGC5_PORTE_MASK));
+	SIM_SCGC5 |= ((SIM_SCGC5_PORTD_MASK) | (SIM_SCGC5_PORTB_MASK) | (SIM_SCGC5_PORTE_MASK) | (SIM_SCGC5_PORTC_MASK));
 
 	//Clear PTB0_Pin and PTB1_Pin settings and configure as PWM
 	PORTB->PCR[BUZZER_PIN] &= ~PORT_PCR_MUX_MASK;
@@ -152,12 +152,12 @@ void initPWM(void){
 	// same for left back wheel
 	PORTE->PCR[LEFT_BACK_WHEEL_PIN1] &= ~PORT_PCR_MUX_MASK;
 	PORTE->PCR[LEFT_BACK_WHEEL_PIN1] |= PORT_PCR_MUX(3);
-	PORTE->PCR[LEFT_BACK_WHEEL_PIN2] &= ~PORT_PCR_MUX_MASK;
-	PORTE->PCR[LEFT_BACK_WHEEL_PIN2] |= PORT_PCR_MUX(3);
+	PORTC->PCR[LEFT_BACK_WHEEL_PIN2] &= ~PORT_PCR_MUX_MASK;
+	PORTC->PCR[LEFT_BACK_WHEEL_PIN2] |= PORT_PCR_MUX(3);
 
 	// same for right back wheel
-	 PORTE->PCR[RIGHT_BACK_WHEEL_PIN1] &= ~PORT_PCR_MUX_MASK;
-	 PORTE->PCR[RIGHT_BACK_WHEEL_PIN1] |= PORT_PCR_MUX(3);
+	 PORTC->PCR[RIGHT_BACK_WHEEL_PIN1] &= ~PORT_PCR_MUX_MASK;
+	 PORTC->PCR[RIGHT_BACK_WHEEL_PIN1] |= PORT_PCR_MUX(3);
 	 PORTD->PCR[RIGHT_BACK_WHEEL_PIN2] &= ~PORT_PCR_MUX_MASK;
 	 PORTD->PCR[RIGHT_BACK_WHEEL_PIN2] |= PORT_PCR_MUX(3);
 
@@ -267,14 +267,14 @@ void led_control(enum color_t color, enum state_t state)
 		if (color == Red)
 		{
 			// all Cs
-			for (int i = 0; i < 7; i++) {
+			for (int i = 0; i < 8; i++) {
 				PTC->PSOR = MASK(red_LED[i]);
 			}
 		}
 		else if (color == Green) 
 		{
 			// CCAAADAA
-			for (int i = 0; i < 7; i++) {
+			for (int i = 0; i < 8; i++) {
 				green_LED_PT[i]->PSOR = MASK(green_LED[i]);
 			}
 		}
@@ -284,14 +284,14 @@ void led_control(enum color_t color, enum state_t state)
 		if (color == Red)
 		{
 			// all Cs
-			for (int i = 0; i < 7; i++) {
+			for (int i = 0; i < 8; i++) {
 				PTC->PCOR = MASK(red_LED[i]);
 			}
 		}
 		else if (color == Green) 
 		{
 			// CCAAADAA
-			for (int i = 0; i < 7; i++) {
+			for (int i = 0; i < 8; i++) {
 				green_LED_PT[i]->PCOR = MASK(green_LED[i]);
 			}
 		}
@@ -322,8 +322,8 @@ void generateSoundPWM2(int freq){
 }
 
 void offRGB(void) {
-	led_control(Green, led_off);
-	led_control(Red, led_off);
+	led_control(Green, led_on);
+	led_control(Red, led_on);
 }
 
 
