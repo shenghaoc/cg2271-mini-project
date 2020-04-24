@@ -186,6 +186,21 @@ void initPWM(void){
 	TPM2_C1V = 0;
 
 	//Increment on every LPTPM counter clock, set pre-scaling to 128 and operate in count up
+	TPM0->SC &= ~((TPM_SC_CMOD_MASK) | (TPM_SC_PS_MASK));
+	TPM0->SC |= (TPM_SC_CMOD(1)) | (TPM_SC_PS(7));
+	TPM0->SC &= ~(TPM_SC_CPWMS_MASK);
+
+	//Increment on every LPTPM counter clock, set pre-scaling to 128 and operate in count up
+	TPM1->SC &= ~((TPM_SC_CMOD_MASK) | (TPM_SC_PS_MASK));
+	TPM1->SC |= (TPM_SC_CMOD(1)) | (TPM_SC_PS(7));
+	TPM1->SC &= ~(TPM_SC_CPWMS_MASK);
+
+	//Increment on every LPTPM counter clock, set pre-scaling to 128 and operate in count up
+	TPM2->SC &= ~((TPM_SC_CMOD_MASK) | (TPM_SC_PS_MASK));
+	TPM2->SC |= (TPM_SC_CMOD(1)) | (TPM_SC_PS(7));
+	TPM2->SC &= ~(TPM_SC_CPWMS_MASK);
+	
+	//Set as edge-aligned PWM with high true pulses
 	TPM0_C0SC &= ~((TPM_CnSC_ELSB_MASK) | (TPM_CnSC_ELSA_MASK) | (TPM_CnSC_MSB_MASK) | (TPM_CnSC_MSA_MASK));
   TPM0_C0SC |= (TPM_CnSC_ELSB(1) | TPM_CnSC_MSB(1));
   
