@@ -321,12 +321,6 @@ void generateSoundPWM2(int freq){
 	TPM2_C0V = modValue(freq)/2;
 }
 
-void offRGB(void) {
-	led_control(Green, led_on);
-	led_control(Red, led_on);
-}
-
-
 void connecting_tone_thread (void *argument){
 	//...
 	for (;;){
@@ -501,7 +495,6 @@ int main (void) {
 	initGPIO();
 	initUART1(BAUD_RATE);
   initPWM();
-	offRGB();
 	// ...
 
 	osKernelInitialize();                 // Initialize CMSIS-RTOS
