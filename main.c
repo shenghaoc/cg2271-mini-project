@@ -390,15 +390,13 @@ void running_green_thread (void *argument){
 	int i = 0;
 	for (;;){
 		osEventFlagsWait(moving_flag, 0x0000001, osFlagsNoClear | osFlagsWaitAny, osWaitForever);
-		osMutexAcquire(greenMutex, osWaitForever);
 		
 		i = (i == 7) ? 0 : i + 1;
 		green_LED_PT[i]->PSOR = MASK(green_LED[i]);
 		osDelay(1000);
-		green_LED_PT[i]->PCOR = MASK(green_LED[i]);
+		led_control(Green, led_off);
 		osDelay(1000);
 
-		osMutexRelease(greenMutex);
 	}
 }
 
@@ -433,18 +431,19 @@ void wheel_control_thread (void *argument){
 	for (;;){
 		osSemaphoreAcquire(mySem_Wheels, osWaitForever);
 		osMessageQueueGet(coordMsg, &myRXData, NULL, osWaitForever);
+		osMutexAcquire(greenMutex, osWaitForever);
 		osEventFlagsSet(moving_flag, 0x0000001);
 		x = myRXData.x;
 		y = myRXData.y;
-		led_control(Green, led_off);
 		delay = 500;
 		
 		osDelay(5000);
 
 
 		// Signal movement has finished
-		delay = 250;
 		osEventFlagsClear(moving_flag, 0x0000001);
+		delay = 250;
+		osMutexRelease(greenMutex);
 	}
 }
 
