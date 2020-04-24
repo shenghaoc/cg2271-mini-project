@@ -470,8 +470,8 @@ void flashing_red_thread (void *argument){
 void wheel_control_thread (void *argument){
 	//...
 	myDataPkt myRXData;
-	uint32_t x;
-	uint32_t y;
+	uint8_t x;
+	uint8_t y;
 	for (;;){
 		osSemaphoreAcquire(mySem_Wheels, osWaitForever);
 		osMessageQueueGet(coordMsg, &myRXData, NULL, osWaitForever);
