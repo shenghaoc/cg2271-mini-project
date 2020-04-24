@@ -266,7 +266,6 @@ void UART1_IRQHandler(void) {
 				osMessageQueuePut(coordMsg, &myData, NULL, 0);
 				osSemaphoreRelease(mySem_Wheels);
 			} else {
-				myDataPkt myData;
 				stored_x = rx_data;
 				prev_tick_count = osKernelGetTickCount();
 				got_x = 1;
