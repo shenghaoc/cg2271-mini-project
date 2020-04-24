@@ -390,13 +390,14 @@ void running_green_thread (void *argument){
 	int i = 0;
 	for (;;){
 		osEventFlagsWait(moving_flag, 0x0000001, osFlagsNoClear | osFlagsWaitAny, osWaitForever);
-		
+		osMutexAcquire(greenMutex, osWaitForever);
 		i = (i == 7) ? 0 : i + 1;
 		green_LED_PT[i]->PSOR = MASK(green_LED[i]);
 		osDelay(1000);
 		led_control(Green, led_off);
 		osDelay(1000);
 
+		osMutexRelease(greenMutex);
 	}
 }
 
@@ -404,9 +405,11 @@ void constant_green_thread (void *argument){
 	//...
 	for (;;){
 		osEventFlagsWait(connected_flag, 0x0000003, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
+		if (osEventFlagsGet(moving_flag) != 0x0000001) {
 		osMutexAcquire(greenMutex, osWaitForever);
-		// always on
-		led_control(Green, led_on);
+			// always on
+			led_control(Green, led_on);
+		}
 		osMutexRelease(greenMutex);
 	}
 }
@@ -431,7 +434,6 @@ void wheel_control_thread (void *argument){
 	for (;;){
 		osSemaphoreAcquire(mySem_Wheels, osWaitForever);
 		osMessageQueueGet(coordMsg, &myRXData, NULL, osWaitForever);
-		osMutexAcquire(greenMutex, osWaitForever);
 		osEventFlagsSet(moving_flag, 0x0000001);
 		x = myRXData.x;
 		y = myRXData.y;
@@ -443,7 +445,6 @@ void wheel_control_thread (void *argument){
 		// Signal movement has finished
 		osEventFlagsClear(moving_flag, 0x0000001);
 		delay = 250;
-		osMutexRelease(greenMutex);
 	}
 }
 
