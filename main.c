@@ -169,12 +169,18 @@ void initPWM(void){
 
 	TPM0->MOD = 0;
 	TPM0_C0V = 0;
+	TPM0_C1V = 0;
+	TPM0_C2V = 0;
+	TPM0_C3V = 0;
+	TPM0_C4V = 0;
+	TPM0_C5V = 0;
 
 	TPM1->MOD = 0;
 	TPM1_C0V = 0;
 
 	TPM2->MOD = 0;
 	TPM2_C0V = 0;
+	TPM2_C1V = 0;
 
 	//Increment on every LPTPM counter clock, set pre-scaling to 128 and operate in count up
 	TPM0->SC &= ~((TPM_SC_CMOD_MASK) | (TPM_SC_PS_MASK));
@@ -304,21 +310,50 @@ int modValue(int freq){
 	return (375000/freq) - 1;
 }
 
-void generateSoundPWM0(int freq){
+void movePWM0_CH0(int freq){
 	TPM0->MOD = modValue(freq);
 	TPM0_C0V = modValue(freq)/2;
 }
 
+void movePWM0_CH1(int freq){
+	TPM0->MOD = modValue(freq);
+	TPM0_C1V = modValue(freq)/2;
+}
 
-void generateSoundPWM1(int freq){
+void movePWM0_CH2(int freq){
+	TPM0->MOD = modValue(freq);
+	TPM0_C2V = modValue(freq)/2;
+}
+
+void movePWM0_CH3(int freq){
+	TPM0->MOD = modValue(freq);
+	TPM0_C3V = modValue(freq)/2;
+}
+
+void movePWM0_CH4(int freq){
+	TPM0->MOD = modValue(freq);
+	TPM0_C4V = modValue(freq)/2;
+}
+
+void movePWM0_CH5(int freq){
+	TPM0->MOD = modValue(freq);
+	TPM0_C5V = modValue(freq)/2;
+}
+
+void generateSound(int freq){
 	TPM1->MOD = modValue(freq);
 	TPM1_C0V = modValue(freq)/2;
 }
 
 
-void generateSoundPWM2(int freq){
+void movePWM2_CH0(int freq){
 	TPM2->MOD = modValue(freq);
 	TPM2_C0V = modValue(freq)/2;
+}
+
+void movePWM2_CH1(int freq){
+	TPM2->MOD = modValue(freq);
+	TPM2_C1V = modValue(freq)/2;
 }
 
 void connecting_tone_thread (void *argument){
@@ -327,12 +362,12 @@ void connecting_tone_thread (void *argument){
 		osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 
-		generateSoundPWM1(0);
+		generateSound(0);
 		for (int i = 0; i < 2; i++) {
-			generateSoundPWM1(melody_connecting[i]);
+			generateSound(melody_connecting[i]);
 			osDelay(750);		
 		}
-		generateSoundPWM1(0);
+		generateSound(0);
 		osDelay(500);		
 		osMutexRelease(buzzerMutex);
 		osEventFlagsSet(connected_flag, 0x0000001);
@@ -348,7 +383,7 @@ void connected_tone_thread (void *argument){
 		osMutexAcquire(buzzerMutex, osWaitForever);
 
 		i = (i == 10) ? 0 : i + 1;
-		generateSoundPWM1(melody_connected[i]);
+		generateSound(melody_connected[i]);
 		osDelay(1000);		
 
 		osMutexRelease(buzzerMutex);
@@ -361,13 +396,13 @@ void finish_tone_thread (void *argument){
 		osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 
-		generateSoundPWM1(0);
+		generateSound(0);
 		osDelay(500);		
 		for (int i = 0; i < 2; i++) {
-			generateSoundPWM1(melody_finish[i]);
+			generateSound(melody_finish[i]);
 			osDelay(500);		
 		}
-		generateSoundPWM1(0);
+		generateSound(0);
 		osDelay(500);		
 
 		osMutexRelease(buzzerMutex);
