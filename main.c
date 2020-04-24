@@ -343,7 +343,7 @@ void connected_tone_thread (void *argument){
 	int i = 0;
 	for (;;){
 		// connected only after both connecting tone and green led flashed twice!
-		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 		
 		i = (i == 10) ? 0 : i + 1;
@@ -407,7 +407,7 @@ void running_green_thread (void *argument){
 void constant_green_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
 		osMutexAcquire(greenMutex, osWaitForever);
 		// always on
 		led_control(Green, led_on);
@@ -418,7 +418,7 @@ void constant_green_thread (void *argument){
 void flashing_red_thread (void *argument){
 	// ...
 	for (;;) {
-		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
 		led_control(Red, led_on);
 		osDelay(delay);
 		led_control(Red, led_off);
