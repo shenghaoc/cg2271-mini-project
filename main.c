@@ -481,6 +481,7 @@ void wheel_control_thread (void *argument){
 	uint8_t x;
 	uint8_t y;
 	for (;;){
+		osEventFlagsWait(connected_flag, 0x0000003, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
 		osSemaphoreAcquire(mySem_Wheels, osWaitForever);
 		osMessageQueueGet(coordMsg, &myRXData, NULL, osWaitForever);
 		osThreadSuspend(running_green_thread_Id);
