@@ -505,11 +505,6 @@ osThreadAttr_t finish_attr = {
 	.priority = osPriorityNormal1
 };
 
-// When car is moving, the other thread shouldn't run at all
-osThreadAttr_t moving_attr = {
-	.priority = osPriorityNormal1
-};
-
 // Everything else is secondary to car movement
 osThreadAttr_t wheels_attr = {
 	.priority = osPriorityHigh
@@ -551,7 +546,7 @@ int main (void) {
 
 	// for LED
 	connecting_flash_flag = osThreadNew(connecting_flash_thread, NULL, NULL);  
-	running_green_thread_Id = osThreadNew(running_green_thread, NULL, &moving_attr);  
+	running_green_thread_Id = osThreadNew(running_green_thread, NULL, NULL);  
 	osThreadNew(constant_green_thread, NULL, NULL);  
 	osThreadNew(flashing_red_thread, NULL, NULL);  
 
