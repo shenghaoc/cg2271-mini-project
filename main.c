@@ -84,9 +84,9 @@ osMessageQueueId_t coordMsg;
 volatile uint32_t delay = 250;
 double aux;
 
-int melody_connecting[] = {a, b, c,  d,  e, f,  g, C};
+int melody_connecting[] = {a, g};
 int melody_connected[] = {C,  b,  g,  C,  b,   e,  C,  c,  g, a, C };
-int melody_finish[] = {C,  b,  a,  g,  f,  e,  d,  c};
+int melody_finish[] = {f,  e};
 
 // CCAAADAA
 GPIO_Type* green_LED_PT[] = {PTC, PTC, PTA, PTA, PTA, PTD, PTA, PTA};
@@ -327,7 +327,7 @@ void connecting_tone_thread (void *argument){
 		osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 
-		for (int i = 0; i < 8; i++) {
+		for (int i = 0; i < 2; i++) {
 			generateSoundPWM1(melody_connecting[i]);
 			osDelay(1000);		
 		}
@@ -359,7 +359,7 @@ void finish_tone_thread (void *argument){
 		osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 
-		for (int i = 0; i < 8; i++) {
+		for (int i = 0; i < 2; i++) {
 			generateSoundPWM1(melody_finish[i]);
 			osDelay(1000);		
 		}
