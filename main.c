@@ -82,7 +82,7 @@ osMessageQueueId_t coordMsg;
 
 // can avoid two different functions for red LED since only delay changes
 volatile uint32_t delay = 250;
-double aux;
+volatile uint32_t motor_frequency = 250;
 
 int melody_connecting[] = {a, g};
 int melody_connected[] = {C,  b,  g,  C,  b,   e,  C,  c,  g, a, C };
@@ -310,34 +310,34 @@ int modValue(int freq){
 	return (375000/freq) - 1;
 }
 
-void movePWM0_CH0(int freq){
-	TPM0->MOD = modValue(freq);
-	TPM0_C0V = modValue(freq)/2;
+void movePWM0_CH0(int duty_cycle){
+	TPM0->MOD = modValue(motor_frequency);
+	TPM0_C0V = modValue(motor_frequency) * duty_cycle / 100;
 }
 
-void movePWM0_CH1(int freq){
-	TPM0->MOD = modValue(freq);
-	TPM0_C1V = modValue(freq)/2;
+void movePWM0_CH1(int duty_cycle){
+	TPM0->MOD = modValue(motor_frequency);
+	TPM0_C1V = modValue(motor_frequency) * duty_cycle / 100;
 }
 
-void movePWM0_CH2(int freq){
-	TPM0->MOD = modValue(freq);
-	TPM0_C2V = modValue(freq)/2;
+void movePWM0_CH2(int duty_cycle){
+	TPM0->MOD = modValue(motor_frequency);
+	TPM0_C2V = modValue(motor_frequency) * duty_cycle / 100;
 }
 
-void movePWM0_CH3(int freq){
-	TPM0->MOD = modValue(freq);
-	TPM0_C3V = modValue(freq)/2;
+void movePWM0_CH3(int duty_cycle){
+	TPM0->MOD = modValue(motor_frequency);
+	TPM0_C3V = modValue(motor_frequency) * duty_cycle / 100;
 }
 
-void movePWM0_CH4(int freq){
-	TPM0->MOD = modValue(freq);
-	TPM0_C4V = modValue(freq)/2;
+void movePWM0_CH4(int duty_cycle){
+	TPM0->MOD = modValue(motor_frequency);
+	TPM0_C4V = modValue(motor_frequency) * duty_cycle / 100;
 }
 
-void movePWM0_CH5(int freq){
-	TPM0->MOD = modValue(freq);
-	TPM0_C5V = modValue(freq)/2;
+void movePWM0_CH5(int duty_cycle){
+	TPM0->MOD = modValue(motor_frequency);
+	TPM0_C5V = modValue(motor_frequency) * duty_cycle / 100;
 }
 
 void generateSound(int freq){
@@ -346,14 +346,14 @@ void generateSound(int freq){
 }
 
 
-void movePWM2_CH0(int freq){
-	TPM2->MOD = modValue(freq);
-	TPM2_C0V = modValue(freq)/2;
+void movePWM2_CH0(int duty_cycle){
+	TPM2->MOD = modValue(motor_frequency);
+	TPM2_C0V = modValue(motor_frequency) * duty_cycle / 100;
 }
 
-void movePWM2_CH1(int freq){
-	TPM2->MOD = modValue(freq);
-	TPM2_C1V = modValue(freq)/2;
+void movePWM2_CH1(int duty_cycle){
+	TPM2->MOD = modValue(motor_frequency);
+	TPM2_C1V = modValue(motor_frequency) * duty_cycle / 100;
 }
 
 void connecting_tone_thread (void *argument){
