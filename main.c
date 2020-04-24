@@ -102,7 +102,7 @@ void initGPIO(void) {
 	// Using the 2 rows at lower right
 
 	// First row
-	
+
 	for (int i = 0; i < 8; i++) {
 		PORTC->PCR[red_LED[i]] &= ~PORT_PCR_MUX_MASK;
 		PORTC->PCR[red_LED[i]] |= PORT_PCR_MUX(1);
@@ -155,10 +155,10 @@ void initPWM(void){
 	PORTC->PCR[LEFT_BACK_WHEEL_PIN2] |= PORT_PCR_MUX(3);
 
 	// same for right back wheel
-	 PORTC->PCR[RIGHT_BACK_WHEEL_PIN1] &= ~PORT_PCR_MUX_MASK;
-	 PORTC->PCR[RIGHT_BACK_WHEEL_PIN1] |= PORT_PCR_MUX(3);
-	 PORTD->PCR[RIGHT_BACK_WHEEL_PIN2] &= ~PORT_PCR_MUX_MASK;
-	 PORTD->PCR[RIGHT_BACK_WHEEL_PIN2] |= PORT_PCR_MUX(3);
+	PORTC->PCR[RIGHT_BACK_WHEEL_PIN1] &= ~PORT_PCR_MUX_MASK;
+	PORTC->PCR[RIGHT_BACK_WHEEL_PIN1] |= PORT_PCR_MUX(3);
+	PORTD->PCR[RIGHT_BACK_WHEEL_PIN2] &= ~PORT_PCR_MUX_MASK;
+	PORTD->PCR[RIGHT_BACK_WHEEL_PIN2] |= PORT_PCR_MUX(3);
 
 	//Enable clock for TPM0, TPM1 and TPM2
 	SIM->SCGC6 |= ((SIM_SCGC6_TPM0_MASK) | (SIM_SCGC6_TPM1_MASK) | (SIM_SCGC6_TPM2_MASK));
@@ -344,7 +344,7 @@ void connected_tone_thread (void *argument){
 		// connected only after both connecting tone and green led flashed twice!
 		osEventFlagsWait(connected_flag, 0x0000003, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
-		
+
 		i = (i == 10) ? 0 : i + 1;
 		generateSoundPWM1(melody_connected[i]);
 		osDelay(1000);		
@@ -358,7 +358,7 @@ void finish_tone_thread (void *argument){
 	for (;;){
 		osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
-		
+
 		for (int i = 0; i < 8; i++) {
 			generateSoundPWM1(melody_finish[i]);
 			osDelay(1000);		
@@ -406,7 +406,7 @@ void constant_green_thread (void *argument){
 	for (;;){
 		osEventFlagsWait(connected_flag, 0x0000003, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
 		if (osEventFlagsGet(moving_flag) != 0x0000001) {
-		osMutexAcquire(greenMutex, osWaitForever);
+			osMutexAcquire(greenMutex, osWaitForever);
 			// always on
 			led_control(Green, led_on);
 		}
@@ -438,7 +438,7 @@ void wheel_control_thread (void *argument){
 		x = myRXData.x;
 		y = myRXData.y;
 		delay = 500;
-		
+
 		osDelay(5000);
 
 
@@ -470,7 +470,7 @@ int main (void) {
 	SystemCoreClockUpdate();
 	initGPIO();
 	initUART1(BAUD_RATE);
-  initPWM();
+	initPWM();
 	// ...
 
 	osKernelInitialize();                 // Initialize CMSIS-RTOS
@@ -484,9 +484,9 @@ int main (void) {
 
 	// semaphores
 	mySem_Wheels = osSemaphoreNew(MSG_COUNT,0,NULL);
-	
+
 	// messages
-	
+
 	coordMsg = osMessageQueueNew(MSG_COUNT, sizeof(myDataPkt), NULL);
 
 	/*
@@ -505,7 +505,7 @@ int main (void) {
 	osThreadNew(flashing_red_thread, NULL, NULL);  
 
 	// for wheels
-  osThreadNew(wheel_control_thread, NULL, &wheels_attr); 
+	osThreadNew(wheel_control_thread, NULL, &wheels_attr); 
 
 	osKernelStart();                      // Start thread execution
 	for (;;) {}
