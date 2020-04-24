@@ -86,7 +86,7 @@ double aux;
 
 int melody_connecting[] = {a, g};
 int melody_connected[] = {C,  b,  g,  C,  b,   e,  C,  c,  g, a, C };
-int melody_finish[] = {f,  e};
+int melody_finish[] = {g,  a};
 
 // CCAAADAA
 GPIO_Type* green_LED_PT[] = {PTC, PTC, PTA, PTA, PTA, PTD, PTA, PTA};
@@ -327,11 +327,13 @@ void connecting_tone_thread (void *argument){
 		osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 
+		generateSoundPWM1(0);
 		for (int i = 0; i < 2; i++) {
 			generateSoundPWM1(melody_connecting[i]);
-			osDelay(1000);		
+			osDelay(750);		
 		}
-
+		generateSoundPWM1(0);
+		osDelay(500);		
 		osMutexRelease(buzzerMutex);
 		osEventFlagsSet(connected_flag, 0x0000001);
 	}
@@ -359,10 +361,14 @@ void finish_tone_thread (void *argument){
 		osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 
+		generateSoundPWM1(0);
+		osDelay(500);		
 		for (int i = 0; i < 2; i++) {
 			generateSoundPWM1(melody_finish[i]);
-			osDelay(1000);		
+			osDelay(500);		
 		}
+		generateSoundPWM1(0);
+		osDelay(500);		
 
 		osMutexRelease(buzzerMutex);
 	}
