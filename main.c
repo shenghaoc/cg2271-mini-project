@@ -5,9 +5,8 @@
 #include "RTE_Components.h"
 #include  CMSIS_device_header
 #include "cmsis_os2.h"
-#include <math.h>
 
-#define MSG_COUNT 2
+#define MSG_COUNT 1
 
 #define RED_LED_0 11 // Port C Pin 11
 #define RED_LED_1 10 // Port C Pin 10
@@ -437,20 +436,10 @@ void wheel_control_thread (void *argument){
 		osEventFlagsSet(moving_flag, 0x0000001);
 		x = myRXData.x;
 		y = myRXData.y;
+		led_control(Green, led_off);
 		delay = 500;
 		
-		aux = pow(pow(x - 153, 2) + pow(153 - y, 2), 0.5);
-		if (x == 255 || y == 255) {
-			// stop
-		} else if (y < 153 && aux < 120 && y > 10) {
-			// turn somewhere?
-		} else if (y > 153 && aux < 120) {
-			// turn somewhere?
-		} else if (y > 153 && aux < 120) {
-			// turn somewhere?
-		} else if (y < 153 && aux < 120 && y > 10) {
-			// turn somewhere?
-		}
+		osDelay(5000);
 
 
 		// Signal movement has finished
