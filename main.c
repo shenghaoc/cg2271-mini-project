@@ -56,10 +56,10 @@
 
 
 // buzzer set LSB, LED set 2nd LSB
-osEventFlagsId_t connecting_flag, connected_flag, moving_flag;
+osEventFlagsId_t connected_flag, moving_flag;
 
 // no other action required at same time, so tied to thread
-osThreadId_t finish_tone_flag;
+osThreadId_t finish_tone_flag,connecting_tone_flag, connecting_flash_flag;
 
 // one device, different behavior for each connection state, working throughout
 // also
@@ -244,7 +244,8 @@ void UART1_IRQHandler(void) {
 		rx_data = UART1->D;
 
 		if (rx_data == 0x01) {
-			osEventFlagsSet(connecting_flag, 0x0000001);
+			osThreadFlagsSet(connecting_tone_flag, 0x0001);
+			osThreadFlagsSet(connecting_flash_flag, 0x0001);
 		} else if (rx_data == 0x02) {
 			// press music icon to play finish tone
 			osThreadFlagsSet(finish_tone_flag, 0x0001);
@@ -324,7 +325,7 @@ void generateSoundPWM2(int freq){
 void connecting_tone_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(connecting_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(buzzerMutex, osWaitForever);
 
 		for (int i = 0; i < 8; i++) {
@@ -372,7 +373,7 @@ void finish_tone_thread (void *argument){
 void connecting_flash_thread (void *argument){
 	//...
 	for (;;){
-		osEventFlagsWait(connecting_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(greenMutex, osWaitForever);
 		// flash twice
 		for (int i = 0; i < 2; i++) {
@@ -469,7 +470,6 @@ void app_main (void *argument) {
 	for (;;) {
 		// wait for both buzzer and led to signal
 		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
-		osEventFlagsSet(connecting_flag, NULL);
 	}
 }
 
@@ -499,7 +499,6 @@ int main (void) {
 
 	osKernelInitialize();                 // Initialize CMSIS-RTOS
 	// event flags
-	connecting_flag = osEventFlagsNew(NULL);
 	connected_flag = osEventFlagsNew(NULL);
 	moving_flag = osEventFlagsNew(NULL);
 
@@ -520,17 +519,17 @@ int main (void) {
 
 	// for buzzer
 	finish_tone_flag = osThreadNew(finish_tone_thread, NULL, &finish_attr);
-	osThreadNew(connecting_tone_thread, NULL, NULL); 
+	connecting_tone_flag = osThreadNew(connecting_tone_thread, NULL, NULL); 
 	osThreadNew(connected_tone_thread, NULL, NULL);  
 
 	// for LED
-	osThreadNew(connecting_flash_thread, NULL, NULL);  
+	connecting_flash_flag = osThreadNew(connecting_flash_thread, NULL, NULL);  
 	osThreadNew(running_green_thread, NULL, &moving_attr);  
 	osThreadNew(constant_green_thread, NULL, NULL);  
 	osThreadNew(flashing_red_thread, NULL, NULL);  
 
 	// for wheels
-	osThreadNew(wheel_control_thread, NULL, &wheels_attr); 
+  osThreadNew(wheel_control_thread, NULL, &wheels_attr); 
 
 	// synchronize connection events
 	osThreadNew(app_main, NULL, NULL);    // Create application main thread
