@@ -461,18 +461,6 @@ void wheel_control_thread (void *argument){
 }
 
 
-/*----------------------------------------------------------------------------
- * Application main thread
- *---------------------------------------------------------------------------*/
-void app_main (void *argument) {
-
-	// ...
-	for (;;) {
-		// wait for both buzzer and led to signal
-		osEventFlagsWait(connected_flag, 0x0000003, osFlagsWaitAll, osWaitForever);
-	}
-}
-
 // Need to be higher priority than normal tone
 osThreadAttr_t finish_attr = {
 	.priority = osPriorityNormal1
@@ -530,9 +518,6 @@ int main (void) {
 
 	// for wheels
   osThreadNew(wheel_control_thread, NULL, &wheels_attr); 
-
-	// synchronize connection events
-	osThreadNew(app_main, NULL, NULL);    // Create application main thread
 
 	osKernelStart();                      // Start thread execution
 	for (;;) {}
