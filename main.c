@@ -397,10 +397,10 @@ void running_green_thread (void *argument){
 	for (;;){
 		osEventFlagsWait(moving_flag, 0x0000001, osFlagsNoClear | osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(greenMutex, osWaitForever);
+		led_control(Green, led_off);
+		osDelay(1000);
 		i = (i == 7) ? 0 : i + 1;
 		green_LED_PT[i]->PSOR = MASK(green_LED[i]);
-		osDelay(1000);
-		led_control(Green, led_off);
 		osDelay(1000);
 
 		osMutexRelease(greenMutex);
