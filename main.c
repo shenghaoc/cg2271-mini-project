@@ -366,7 +366,6 @@ void finish_tone_thread (void *argument){
 		}
 
 		osMutexRelease(buzzerMutex);
-		osThreadFlagsSet(finish_tone_flag, NULL);
 	}
 }
 
@@ -391,7 +390,7 @@ void running_green_thread (void *argument){
 	//...
 	int i = 0;
 	for (;;){
-		osEventFlagsWait(moving_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		osEventFlagsWait(moving_flag, 0x0000001, osFlagsNoClear | osFlagsWaitAny, osWaitForever);
 		osMutexAcquire(greenMutex, osWaitForever);
 		
 		i = (i == 7) ? 0 : i + 1;
@@ -435,9 +434,9 @@ void wheel_control_thread (void *argument){
 	for (;;){
 		osSemaphoreAcquire(mySem_Wheels, osWaitForever);
 		osMessageQueueGet(coordMsg, &myRXData, NULL, osWaitForever);
+		osEventFlagsSet(moving_flag, 0x0000001);
 		x = myRXData.x;
 		y = myRXData.y;
-		osEventFlagsSet(moving_flag, 0x0000001);
 		delay = 500;
 		
 		aux = pow(pow(x - 153, 2) + pow(153 - y, 2), 0.5);
@@ -456,7 +455,7 @@ void wheel_control_thread (void *argument){
 
 		// Signal movement has finished
 		delay = 250;
-		osEventFlagsSet(moving_flag, NULL);
+		osEventFlagsClear(moving_flag, 0x0000001);
 	}
 }
 
