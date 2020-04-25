@@ -59,7 +59,7 @@ osEventFlagsId_t moving_flag;
 osThreadId_t finish_tone_flag, connecting_tone_flag, connecting_flash_flag;
 osThreadId_t constant_green_thread_Id, running_green_thread_Id;
 
-osMutexId_t buzzerMutex, greenMutex;
+osMutexId_t buzzerMutex;
 
 osSemaphoreId_t mySem_Wheels;
 
@@ -433,27 +433,19 @@ void running_green_thread(void *argument) {
     //...
     int i = 0;
     for (;;) {
-        osMutexAcquire(greenMutex, osWaitForever);
-			
         led_control(Green, led_off);
         osDelay(1000);
         i = (i == 7) ? 0 : i + 1;
         green_LED_PT[i]->PSOR = MASK(green_LED[i]);
         osDelay(1000);
-
-        osMutexRelease(greenMutex);
     }
 }
 
 void constant_green_thread(void *argument) {
     //...
     for (;;) {
-        osMutexAcquire(greenMutex, osWaitForever);
-			
         // always on
         led_control(Green, led_on);
-			
-        osMutexRelease(greenMutex);
     }
 }
 
@@ -519,8 +511,6 @@ void connecting_flash_thread(void *argument) {
     for (;;) {
         osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
 			
-        osMutexAcquire(greenMutex, osWaitForever);
-			
         // flash twice, total 2 * 2 * 1000 = 4000 ticks
         for (int i = 0; i < 2; i++) {
             led_control(Green, led_on);
@@ -528,8 +518,6 @@ void connecting_flash_thread(void *argument) {
             led_control(Green, led_off);
             osDelay(1000);
         }
-				
-        osMutexRelease(greenMutex);
 				
 				// Set up the threads in connected state and terminate itself
 				osThreadNew(flashing_red_thread, NULL, NULL);
@@ -585,7 +573,6 @@ int main(void) {
 
     // mutexes
     buzzerMutex = osMutexNew(NULL);
-    greenMutex = osMutexNew(NULL);
 
     // semaphore
     mySem_Wheels = osSemaphoreNew(MSG_COUNT, 0, NULL);
