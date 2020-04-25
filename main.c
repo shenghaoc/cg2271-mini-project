@@ -395,7 +395,7 @@ void connected_tone_thread(void *argument) {
         // connected only after both connecting tone and green led flashed twice!
         osMutexAcquire(buzzerMutex, osWaitForever);
 
-        i = (i == 10) ? 0 : i + 1;
+        i = (i + 1) % 11;
         generateSound(melody_connected[i]);
         osDelay(1000);
 
@@ -429,7 +429,7 @@ void green_thread(void *argument) {
 			if(osEventFlagsGet(moving_flag) == 0x0000001) {
         led_control(Green, led_off);
         osDelay(1000);
-        i = (i == 7) ? 0 : i + 1;
+        i = (i + 1) % 8;
         green_LED_PT[i]->PSOR = MASK(green_LED[i]);
         osDelay(1000);
 			} else {
