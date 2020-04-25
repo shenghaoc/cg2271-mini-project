@@ -72,7 +72,6 @@ enum state_t {
 };
 
 volatile uint8_t rx_data = 0;
-volatile uint8_t got_x = 0;
 volatile uint8_t stored_x = 0;
 volatile uint32_t prev_tick_count = 0;
 
@@ -277,8 +276,7 @@ void UART1_IRQHandler(void) {
             // press music icon to play finish tone
             osThreadFlagsSet(finish_tone_flag, 0x0001);
         } else {
-            if (got_x == 1 && (osKernelGetTickCount() - prev_tick_count <= 10)) {
-                got_x = 0;
+            if (osKernelGetTickCount() - prev_tick_count <= 10) {
                 myDataPkt myData;
                 myData.x = stored_x;
                 myData.y = rx_data;
@@ -287,7 +285,6 @@ void UART1_IRQHandler(void) {
             } else {
                 stored_x = rx_data;
                 prev_tick_count = osKernelGetTickCount();
-                got_x = 1;
             }
 
         }
