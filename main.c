@@ -73,7 +73,7 @@ enum state_t {
 
 volatile uint8_t rx_data = 0;
 volatile uint8_t prev_num = 0;
-volatile uint32_t prev_tick_count = 0;
+volatile uint8_t has_prev = 0;
 
 // coordinates
 typedef struct {
@@ -269,7 +269,8 @@ void UART1_IRQHandler(void) {
     if ((UART1->S1 & UART_S1_RDRF_MASK)) {
 			rx_data = UART1->D;
 			
-			if (osKernelGetTickCount() - prev_tick_count <= 10) {
+			if (has_prev == 1) {
+				has_prev = 0;
 				if (rx_data == 0x01) {
             osThreadFlagsSet(connecting_tone_flag, 0x0001);
             osThreadFlagsSet(connecting_flash_flag, 0x0001);
@@ -285,7 +286,7 @@ void UART1_IRQHandler(void) {
 				} 
 			} else {
 				prev_num = rx_data;
-				prev_tick_count = osKernelGetTickCount();
+				has_prev = 1;
 			}
 		}
 }
@@ -382,12 +383,6 @@ osThreadAttr_t wheels_attr = {
 // Need to preempt LED threads
 osThreadAttr_t main_attr = {
         .priority = osPriorityNormal1
-};
-
-// Need to execute right after wheel_control_thread
-// If app_main executes first stop_thread will turn LEDs off too early
-osThreadAttr_t stop_attr = {
-        .priority = osPriorityNormal2
 };
 
 
@@ -539,19 +534,6 @@ void app_main (void *argument) {
     delay = 500;
 	}
 }
-
-void stop_thread(void *argument) {
-	
-	  // ...
-  for (;;) {
-		osEventFlagsWait(moving_flag, 0x0000002, osFlagsWaitAny, osWaitForever);
-		
-		// Restore LED behavior
-		osThreadSuspend(running_green_thread_Id);
-		osThreadResume(constant_green_thread_Id);
-    delay = 250;
-	}
-}
  
 
 
@@ -586,8 +568,7 @@ int main(void) {
     osThreadNew(wheel_control_thread, NULL, &wheels_attr);
 		
     osThreadNew(app_main, NULL, &main_attr);    // Create application main thread
-		osThreadNew(stop_thread, NULL, &stop_attr);
-
+		
     osKernelStart();                      // Start thread execution
     for (;;) {}
 }
