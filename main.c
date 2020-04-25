@@ -55,7 +55,7 @@
 
 
 // buzzer set LSB, LED set 2nd LSB
-osEventFlagsId_t connected_flag, moving_flag;
+osEventFlagsId_t moving_flag;
 
 // no other action required at same time, so tied to thread
 osThreadId_t finish_tone_flag, connecting_tone_flag, connecting_flash_flag, running_green_thread_Id;
@@ -379,6 +379,21 @@ void movePWM2_CH1(int duty_cycle) {
     TPM2_C1V = modValue(motor_frequency) * duty_cycle / 100;
 }
 
+void connected_tone_thread(void *argument) {
+    //...
+    int i = 0;
+    for (;;) {
+        // connected only after both connecting tone and green led flashed twice!
+        osMutexAcquire(buzzerMutex, osWaitForever);
+
+        i = (i == 10) ? 0 : i + 1;
+        generateSound(melody_connected[i]);
+        osDelay(1000);
+
+        osMutexRelease(buzzerMutex);
+    }
+}
+
 void connecting_tone_thread(void *argument) {
     //...
     for (;;) {
@@ -393,25 +408,12 @@ void connecting_tone_thread(void *argument) {
         generateSound(0);
         osDelay(500);
         osMutexRelease(buzzerMutex);
-        osEventFlagsSet(connected_flag, 0x0000001);
+				osThreadNew(connected_tone_thread, NULL, NULL);
+				osThreadTerminate(osThreadGetId());
     }
 }
 
-void connected_tone_thread(void *argument) {
-    //...
-    int i = 0;
-    for (;;) {
-        // connected only after both connecting tone and green led flashed twice!
-        osEventFlagsWait(connected_flag, 0x0000003, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
-        osMutexAcquire(buzzerMutex, osWaitForever);
 
-        i = (i == 10) ? 0 : i + 1;
-        generateSound(melody_connected[i]);
-        osDelay(1000);
-
-        osMutexRelease(buzzerMutex);
-    }
-}
 
 void finish_tone_thread(void *argument) {
     //...
@@ -429,23 +431,6 @@ void finish_tone_thread(void *argument) {
         osDelay(500);
 
         osMutexRelease(buzzerMutex);
-    }
-}
-
-void connecting_flash_thread(void *argument) {
-    //...
-    for (;;) {
-        osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
-        osMutexAcquire(greenMutex, osWaitForever);
-        // flash twice
-        for (int i = 0; i < 2; i++) {
-            led_control(Green, led_on);
-            osDelay(1000);
-            led_control(Green, led_off);
-            osDelay(1000);
-        }
-        osMutexRelease(greenMutex);
-        osEventFlagsSet(connected_flag, 0x0000002);
     }
 }
 
@@ -468,7 +453,6 @@ void running_green_thread(void *argument) {
 void constant_green_thread(void *argument) {
     //...
     for (;;) {
-        osEventFlagsWait(connected_flag, 0x0000003, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
 				if (osEventFlagsGet(moving_flag) == 0x0000001) {
 					osThreadSuspend(osThreadGetId());
 				}
@@ -482,7 +466,6 @@ void constant_green_thread(void *argument) {
 void flashing_red_thread(void *argument) {
     // ...
     for (;;) {
-        osEventFlagsWait(connected_flag, 0x0000003, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
         led_control(Red, led_on);
         osDelay(delay);
         led_control(Red, led_off);
@@ -497,7 +480,6 @@ void wheel_control_thread(void *argument) {
     uint8_t x;
     uint8_t y;
     for (;;) {
-        osEventFlagsWait(connected_flag, 0x0000003, osFlagsNoClear | osFlagsWaitAll, osWaitForever);
         osSemaphoreAcquire(mySem_Wheels, osWaitForever);
         osMessageQueueGet(coordMsg, &myRXData, NULL, osWaitForever);
         osEventFlagsSet(moving_flag, 0x0000001);
@@ -514,6 +496,26 @@ void wheel_control_thread(void *argument) {
 				}
 				osEventFlagsClear(moving_flag, 0x0000001);
         delay = 250;
+    }
+}
+
+void connecting_flash_thread(void *argument) {
+    //...
+    for (;;) {
+        osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
+        osMutexAcquire(greenMutex, osWaitForever);
+        // flash twice
+        for (int i = 0; i < 2; i++) {
+            led_control(Green, led_on);
+            osDelay(1000);
+            led_control(Green, led_off);
+            osDelay(1000);
+        }
+        osMutexRelease(greenMutex);
+				osThreadNew(flashing_red_thread, NULL, NULL);
+				connecting_flash_flag = osThreadNew(connecting_flash_thread, NULL, NULL);
+				running_green_thread_Id = osThreadNew(running_green_thread, NULL, NULL);
+				osThreadTerminate(osThreadGetId());
     }
 }
 
@@ -539,7 +541,6 @@ int main(void) {
 
     osKernelInitialize();                 // Initialize CMSIS-RTOS
     // event flags
-    connected_flag = osEventFlagsNew(NULL);
     moving_flag = osEventFlagsNew(NULL);
 
     // mutexes
@@ -560,13 +561,9 @@ int main(void) {
     // for buzzer
     finish_tone_flag = osThreadNew(finish_tone_thread, NULL, &finish_attr);
     connecting_tone_flag = osThreadNew(connecting_tone_thread, NULL, NULL);
-    osThreadNew(connected_tone_thread, NULL, NULL);
 
     // for LED
-    connecting_flash_flag = osThreadNew(connecting_flash_thread, NULL, NULL);
-    running_green_thread_Id = osThreadNew(running_green_thread, NULL, NULL);
     osThreadNew(constant_green_thread, NULL, NULL);
-    osThreadNew(flashing_red_thread, NULL, NULL);
 
     // for wheels
     osThreadNew(wheel_control_thread, NULL, &wheels_attr);
