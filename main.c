@@ -271,13 +271,13 @@ void UART1_IRQHandler(void) {
 			
 			if (has_prev == 1) {
 				has_prev = 0;
-				if (rx_data == 0x01) {
+				if (rx_data == 0x00) {
             osThreadFlagsSet(connecting_tone_flag, 0x0001);
             osThreadFlagsSet(connecting_flash_flag, 0x0001);
-        } else if (rx_data == 0x02) {
+        } else if (rx_data == 0x01) {
             // press music icon to play finish tone
             osThreadFlagsSet(finish_tone_flag, 0x0001);
-        } else if(rx_data == 0xFF) {
+        } else if(rx_data > 0x71 && rx_data < 0x8F) { // 128 - 15 = 113 and 128 + 15 = 143
 					osEventFlagsSet(moving_flag, 0x0000002);
 				} else {
 					myDataPkt myData;
