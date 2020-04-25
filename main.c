@@ -277,7 +277,9 @@ void UART1_IRQHandler(void) {
         } else if (rx_data == 0x02) {
             // press music icon to play finish tone
             osThreadFlagsSet(finish_tone_flag, 0x0001);
-        } else {
+        } else if(rx_data == 0xFF) {
+					osEventFlagsSet(moving_flag, 0x0000002);
+				} else {
 					myDataPkt myData;
           myData.x = prev_num;
 					myData.y = rx_data;
@@ -382,7 +384,7 @@ osThreadAttr_t wheels_attr = {
 
 // Need to preempt LED threads
 osThreadAttr_t main_attr = {
-        .priority = osPriorityNormal1
+        .priority = osPriorityNormal2
 };
 
 
@@ -463,12 +465,6 @@ void wheel_control_thread(void *argument) {
         y = myRXData.y;
 
         osDelay(5000);
-
-
-        // Signal movement has finished
-				if (osMessageQueueGetCount(coordMsg) == 0) {
-					osEventFlagsSet(moving_flag, 0x0000002);
-				}
     }
 }
 
@@ -535,7 +531,18 @@ void app_main (void *argument) {
 	}
 }
  
+void stop_thread(void *argument) {
 
+	  // ...
+  for (;;) {
+		osEventFlagsWait(moving_flag, 0x0000002, osFlagsWaitAny, osWaitForever);
+
+		// Restore LED behavior
+		osThreadSuspend(running_green_thread_Id);
+		osThreadResume(constant_green_thread_Id);
+    delay = 250;
+	}
+}
 
 int main(void) {
 
@@ -568,7 +575,9 @@ int main(void) {
     osThreadNew(wheel_control_thread, NULL, &wheels_attr);
 		
     osThreadNew(app_main, NULL, &main_attr);    // Create application main thread
-		
+		// Should not preempt app_main, but should run straight after
+		osThreadNew(stop_thread, NULL, &main_attr);
+
     osKernelStart();                      // Start thread execution
     for (;;) {}
 }
