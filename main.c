@@ -542,24 +542,7 @@ void wheel_control_thread(void *argument) {
                 movePWM0_CH4(l);
             }
 
-        } else {
-            // Forward
-            //Left Drive
-            movePWM2_CH1(0);
-            movePWM0_CH0(0);
-            //Right Drive
-            movePWM0_CH3(0);
-            movePWM0_CH1(0);
-            //BackWards
-            // left drive
-            movePWM2_CH0(0);
-            movePWM0_CH4(0);
-            //Right drive
-            movePWM0_CH2(0);
-            movePWM0_CH5(0);
         }
-
-
     }
 }
 
@@ -584,41 +567,41 @@ void app_main(void *argument) {
             // Start of Wheel_control
             if (myRXData.x > 0x71 && myRXData.x < 0x8F && myRXData.y > 0x71 && myRXData.y < 0x8F) {
                 osEventFlagsClear(moving_flag, 0x0000001);
+            }
+            osEventFlagsSet(moving_flag, 0x0000001);
+            // Start of Brain
+            x = (myRXData.x > 128) ? (myRXData.x - 128) : (128 - myRXData.x);
+            y = (myRXData.y > 128) ? (myRXData.y - 128) : (128 - myRXData.y);
+            r = x * ((myRXData.y > 128) ? (1 - y / 128) * x : x);
+            l = x * ((myRXData.y < 128) ? (1 - y / 128) * x : x);
+            //End of Brain
+
+            //for Right
+            if (myRXData.y > 128) {
+                r = myRXData.y - 128;
+                r = r / 2;
+                osThreadFlagsSet(wheel_control_flag, 0x0001);
             } else {
-                osEventFlagsSet(moving_flag, 0x0000001);
-                // Start of Brain
-                x = (myRXData.x > 128) ? (myRXData.x - 128) : (128 - myRXData.x);
-                y = (myRXData.y > 128) ? (myRXData.y - 128) : (128 - myRXData.y);
-                r = x * ((myRXData.y > 128) ? (1 - y / 128) * x : x);
-                l = x * ((myRXData.y < 128) ? (1 - y / 128) * x : x);
-                //End of Brain
-
-                //for Right
-                if (myRXData.y > 128) {
-                    r = myRXData.y - 128;
-                    r = r / 2;
-                    osThreadFlagsSet(wheel_control_flag, 0x0001);
-                } else {
-                    r = 128 - myRXData.y;
-                    r = r / 2;
-                    osThreadFlagsSet(wheel_control_flag, 0x0002);
-                }
-
-                //for left
-                if (myRXData.x > 128) {
-                    l = myRXData.x - 128;
-                    l = l / 2;
-                    osThreadFlagsSet(wheel_control_flag, 0x0004);
-                } else {
-                    l = 128 - myRXData.x;
-                    l = l / 2;
-                    osThreadFlagsSet(wheel_control_flag, 0x0008);
-                }
-                //End of Wheel Control
-                osSemaphoreRelease(mySem_Wheels);
+                r = 128 - myRXData.y;
+                r = r / 2;
+                osThreadFlagsSet(wheel_control_flag, 0x0002);
             }
 
+            //for left
+            if (myRXData.x > 128) {
+                l = myRXData.x - 128;
+                l = l / 2;
+                osThreadFlagsSet(wheel_control_flag, 0x0004);
+            } else {
+                l = 128 - myRXData.x;
+                l = l / 2;
+                osThreadFlagsSet(wheel_control_flag, 0x0008);
+            }
+            //End of Wheel Control
+            osSemaphoreRelease(mySem_Wheels);
         }
+
+
     }
 }
 
