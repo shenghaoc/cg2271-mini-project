@@ -379,6 +379,17 @@ void movePWM2_CH1(int duty_cycle) {
     TPM2_C1V = modValue(motor_frequency) * duty_cycle / 100;
 }
 
+// Need to be higher priority than normal tone
+osThreadAttr_t finish_attr = {
+        .priority = osPriorityNormal1
+};
+
+// Everything else is secondary to car movement
+osThreadAttr_t wheels_attr = {
+        .priority = osPriorityHigh
+};
+
+
 void connected_tone_thread(void *argument) {
     //...
     int i = 0;
@@ -393,27 +404,6 @@ void connected_tone_thread(void *argument) {
         osMutexRelease(buzzerMutex);
     }
 }
-
-void connecting_tone_thread(void *argument) {
-    //...
-    for (;;) {
-        osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
-        osMutexAcquire(buzzerMutex, osWaitForever);
-
-        generateSound(0);
-        for (int i = 0; i < 2; i++) {
-            generateSound(melody_connecting[i]);
-            osDelay(750);
-        }
-        generateSound(0);
-        osDelay(500);
-        osMutexRelease(buzzerMutex);
-				osThreadNew(connected_tone_thread, NULL, NULL);
-				osThreadTerminate(osThreadGetId());
-    }
-}
-
-
 
 void finish_tone_thread(void *argument) {
     //...
@@ -499,36 +489,56 @@ void wheel_control_thread(void *argument) {
     }
 }
 
+void connecting_tone_thread(void *argument) {
+    //...
+    for (;;) {
+        osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
+			
+        osMutexAcquire(buzzerMutex, osWaitForever);
+
+				// total 2 * 1750 + 500 = 4000 ticks
+        for (int i = 0; i < 2; i++) {
+            generateSound(melody_connecting[i]);
+            osDelay(1750);
+        }
+        generateSound(0);
+        osDelay(500);
+				
+        osMutexRelease(buzzerMutex);
+				
+				// Set up the threads in connected state and terminate itself
+				osThreadNew(connected_tone_thread, NULL, NULL);
+				finish_tone_flag = osThreadNew(finish_tone_thread, NULL, &finish_attr);
+				osThreadTerminate(osThreadGetId());
+    }
+}
+
+
 void connecting_flash_thread(void *argument) {
     //...
     for (;;) {
         osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
+			
         osMutexAcquire(greenMutex, osWaitForever);
-        // flash twice
+			
+        // flash twice, total 2 * 2 * 1000 = 4000 ticks
         for (int i = 0; i < 2; i++) {
             led_control(Green, led_on);
             osDelay(1000);
             led_control(Green, led_off);
             osDelay(1000);
         }
+				
         osMutexRelease(greenMutex);
+				
+				// Set up the threads in connected state and terminate itself
 				osThreadNew(flashing_red_thread, NULL, NULL);
-				connecting_flash_flag = osThreadNew(connecting_flash_thread, NULL, NULL);
+				osThreadNew(constant_green_thread, NULL, NULL);
 				running_green_thread_Id = osThreadNew(running_green_thread, NULL, NULL);
 				osThreadTerminate(osThreadGetId());
     }
 }
 
-
-// Need to be higher priority than normal tone
-osThreadAttr_t finish_attr = {
-        .priority = osPriorityNormal1
-};
-
-// Everything else is secondary to car movement
-osThreadAttr_t wheels_attr = {
-        .priority = osPriorityHigh
-};
 
 int main(void) {
 
@@ -537,35 +547,29 @@ int main(void) {
     initGPIO();
     initUART1(BAUD_RATE);
     initPWM();
-    // ...
 
     osKernelInitialize();                 // Initialize CMSIS-RTOS
-    // event flags
+	
+    // event flag
     moving_flag = osEventFlagsNew(NULL);
 
     // mutexes
     buzzerMutex = osMutexNew(NULL);
     greenMutex = osMutexNew(NULL);
 
-    // semaphores
+    // semaphore
     mySem_Wheels = osSemaphoreNew(MSG_COUNT, 0, NULL);
 
-    // messages
-
+    // message
     coordMsg = osMessageQueueNew(MSG_COUNT, sizeof(myDataPkt), NULL);
 
-    /*
-     *	threads
-     */
-
-    // for buzzer
-    finish_tone_flag = osThreadNew(finish_tone_thread, NULL, &finish_attr);
+    // initial buzzer thread
     connecting_tone_flag = osThreadNew(connecting_tone_thread, NULL, NULL);
 
-    // for LED
-    osThreadNew(constant_green_thread, NULL, NULL);
+    // initial LED thread
+		connecting_flash_flag = osThreadNew(connecting_flash_thread, NULL, NULL);
 
-    // for wheels
+    // wheels thread
     osThreadNew(wheel_control_thread, NULL, &wheels_attr);
 
     osKernelStart();                      // Start thread execution
