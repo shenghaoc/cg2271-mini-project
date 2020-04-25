@@ -509,9 +509,6 @@ void wheel_control_thread(void *argument) {
             osThreadFlagsClear(0x0008);
             // move
         }
-
-
-        osDelay(5000);
     }
 }
 
