@@ -497,15 +497,18 @@ void wheel_control_thread(void *argument) {
     for (;;) {
         osSemaphoreAcquire(mySem_Wheels, osWaitForever);
         if (osThreadFlagsGet() == 0x0001) {
+            osThreadFlagsClear(0x0001);
             // move
         } else if (osThreadFlagsGet() == 0x0002) {
+            osThreadFlagsClear(0x0002);
             // move
         } else if (osThreadFlagsGet() == 0x0004) {
+            osThreadFlagsClear(0x0004);
             // move
         } else if (osThreadFlagsGet() == 0x0008) {
+            osThreadFlagsClear(0x0008);
             // move
         }
-        osThreadFlagsClear(0x0001 | 0x0002 | 0x0004 | 0x0008);
 
 
         osDelay(5000);
@@ -520,6 +523,7 @@ void app_main(void *argument) {
     uint8_t y;
     for (;;) {
         osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
+        osMessageQueueGet(coordMsg, &myRXData, NULL, osWaitForever);
         x = myRXData.x;
         if (x == 0x00) {
             osThreadFlagsSet(connecting_tone_flag, 0x0001);
