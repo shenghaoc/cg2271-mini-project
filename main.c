@@ -72,7 +72,7 @@ enum state_t {
 };
 
 volatile uint8_t rx_data = 0;
-volatile uint8_t stored_x = 0;
+volatile uint8_t prev_num = 0;
 volatile uint32_t prev_tick_count = 0;
 
 // coordinates
@@ -267,28 +267,27 @@ void initUART1(uint32_t baud_rate) {
 
 void UART1_IRQHandler(void) {
     if ((UART1->S1 & UART_S1_RDRF_MASK)) {
-        rx_data = UART1->D;
-
-        if (rx_data == 0x01) {
+			rx_data = UART1->D;
+			
+			if (osKernelGetTickCount() - prev_tick_count <= 10) {
+				if (rx_data == 0x01) {
             osThreadFlagsSet(connecting_tone_flag, 0x0001);
             osThreadFlagsSet(connecting_flash_flag, 0x0001);
         } else if (rx_data == 0x02) {
             // press music icon to play finish tone
             osThreadFlagsSet(finish_tone_flag, 0x0001);
         } else {
-            if (osKernelGetTickCount() - prev_tick_count <= 10) {
-                myDataPkt myData;
-                myData.x = stored_x;
-                myData.y = rx_data;
-								osEventFlagsSet(moving_flag, 0x0000001);
-                osMessageQueuePut(coordMsg, &myData, NULL, 0);
-            } else {
-                stored_x = rx_data;
-                prev_tick_count = osKernelGetTickCount();
-            }
-
-        }
-    }
+					myDataPkt myData;
+          myData.x = prev_num;
+					myData.y = rx_data;
+					osEventFlagsSet(moving_flag, 0x0000001);
+					osMessageQueuePut(coordMsg, &myData, NULL, 0); 
+				} 
+			} else {
+				prev_num = rx_data;
+				prev_tick_count = osKernelGetTickCount();
+			}
+		}
 }
 
 // flash entire rows
