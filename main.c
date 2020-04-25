@@ -54,22 +54,19 @@
 #define C 523
 
 
-// buzzer set LSB, LED set 2nd LSB
 osEventFlagsId_t moving_flag;
 
-// no other action required at same time, so tied to thread
-osThreadId_t finish_tone_flag, connecting_tone_flag, connecting_flash_flag, running_green_thread_Id;
+osThreadId_t finish_tone_flag, connecting_tone_flag, connecting_flash_flag;
+osThreadId_t constant_green_thread_Id, running_green_thread_Id;
 
-// one device, different behavior for each connection state, working throughout
-// also
 osMutexId_t buzzerMutex, greenMutex;
 
-// Car does not move throughout, therefore use semaphore
 osSemaphoreId_t mySem_Wheels;
 
 enum color_t {
     Red, Green
 };
+
 enum state_t {
     led_on, led_off
 };
@@ -110,7 +107,6 @@ void initGPIO(void) {
     // Using the 2 rows at lower right
 
     // First row
-
     for (int i = 0; i < 8; i++) {
         PORTC->PCR[red_LED[i]] &= ~PORT_PCR_MUX_MASK;
         PORTC->PCR[red_LED[i]] |= PORT_PCR_MUX(1);
@@ -286,8 +282,8 @@ void UART1_IRQHandler(void) {
                 myDataPkt myData;
                 myData.x = stored_x;
                 myData.y = rx_data;
+								osEventFlagsSet(moving_flag, 0x0000001);
                 osMessageQueuePut(coordMsg, &myData, NULL, 0);
-                osSemaphoreRelease(mySem_Wheels);
             } else {
                 stored_x = rx_data;
                 prev_tick_count = osKernelGetTickCount();
@@ -307,7 +303,6 @@ void led_control(enum color_t color, enum state_t state) {
                 PTC->PSOR = MASK(red_LED[i]);
             }
         } else if (color == Green) {
-            // CCAAADAA
             for (int i = 0; i < 8; i++) {
                 green_LED_PT[i]->PSOR = MASK(green_LED[i]);
             }
@@ -319,7 +314,6 @@ void led_control(enum color_t color, enum state_t state) {
                 PTC->PCOR = MASK(red_LED[i]);
             }
         } else if (color == Green) {
-            // CCAAADAA
             for (int i = 0; i < 8; i++) {
                 green_LED_PT[i]->PCOR = MASK(green_LED[i]);
             }
@@ -389,6 +383,17 @@ osThreadAttr_t wheels_attr = {
         .priority = osPriorityHigh
 };
 
+// Need to preempt LED threads
+osThreadAttr_t main_attr = {
+        .priority = osPriorityNormal1
+};
+
+// Need to execute right after wheel_control_thread
+// If app_main executes first stop_thread will turn LEDs off too early
+osThreadAttr_t stop_attr = {
+        .priority = osPriorityNormal2
+};
+
 
 void connected_tone_thread(void *argument) {
     //...
@@ -428,8 +433,8 @@ void running_green_thread(void *argument) {
     //...
     int i = 0;
     for (;;) {
-        osEventFlagsWait(moving_flag, 0x0000001, osFlagsNoClear | osFlagsWaitAny, osWaitForever);
         osMutexAcquire(greenMutex, osWaitForever);
+			
         led_control(Green, led_off);
         osDelay(1000);
         i = (i == 7) ? 0 : i + 1;
@@ -443,12 +448,11 @@ void running_green_thread(void *argument) {
 void constant_green_thread(void *argument) {
     //...
     for (;;) {
-				if (osEventFlagsGet(moving_flag) == 0x0000001) {
-					osThreadSuspend(osThreadGetId());
-				}
         osMutexAcquire(greenMutex, osWaitForever);
+			
         // always on
         led_control(Green, led_on);
+			
         osMutexRelease(greenMutex);
     }
 }
@@ -472,20 +476,16 @@ void wheel_control_thread(void *argument) {
     for (;;) {
         osSemaphoreAcquire(mySem_Wheels, osWaitForever);
         osMessageQueueGet(coordMsg, &myRXData, NULL, osWaitForever);
-        osEventFlagsSet(moving_flag, 0x0000001);
         x = myRXData.x;
         y = myRXData.y;
-        delay = 500;
 
         osDelay(5000);
 
 
         // Signal movement has finished
-				if (osThreadGetState(running_green_thread_Id) == osThreadBlocked) {
-					osThreadResume(running_green_thread_Id);
+				if (osMessageQueueGetCount(coordMsg) == 0) {
+					osEventFlagsSet(moving_flag, 0x0000002);
 				}
-				osEventFlagsClear(moving_flag, 0x0000001);
-        delay = 250;
     }
 }
 
@@ -533,11 +533,42 @@ void connecting_flash_thread(void *argument) {
 				
 				// Set up the threads in connected state and terminate itself
 				osThreadNew(flashing_red_thread, NULL, NULL);
-				osThreadNew(constant_green_thread, NULL, NULL);
 				running_green_thread_Id = osThreadNew(running_green_thread, NULL, NULL);
+				osThreadSuspend(running_green_thread_Id);
+				constant_green_thread_Id = osThreadNew(constant_green_thread, NULL, NULL);
 				osThreadTerminate(osThreadGetId());
     }
 }
+
+void app_main (void *argument) {
+ 
+  // ...
+  for (;;) {
+		osEventFlagsWait(moving_flag, 0x0000001, osFlagsWaitAny, osWaitForever);
+		
+		// high priority of wheel_control_thread means it preempts
+    osSemaphoreRelease(mySem_Wheels);
+		
+		// Change LED behavior during osDelay() in wheel_control_thread()
+		osThreadSuspend(constant_green_thread_Id);
+		osThreadResume(running_green_thread_Id);
+    delay = 500;
+	}
+}
+
+void stop_thread(void *argument) {
+	
+	  // ...
+  for (;;) {
+		osEventFlagsWait(moving_flag, 0x0000002, osFlagsWaitAny, osWaitForever);
+		
+		// Restore LED behavior
+		osThreadSuspend(running_green_thread_Id);
+		osThreadResume(constant_green_thread_Id);
+    delay = 250;
+	}
+}
+ 
 
 
 int main(void) {
@@ -550,7 +581,6 @@ int main(void) {
 
     osKernelInitialize();                 // Initialize CMSIS-RTOS
 	
-    // event flag
     moving_flag = osEventFlagsNew(NULL);
 
     // mutexes
@@ -571,6 +601,9 @@ int main(void) {
 
     // wheels thread
     osThreadNew(wheel_control_thread, NULL, &wheels_attr);
+		
+    osThreadNew(app_main, NULL, &main_attr);    // Create application main thread
+		osThreadNew(stop_thread, NULL, &stop_attr);
 
     osKernelStart();                      // Start thread execution
     for (;;) {}
