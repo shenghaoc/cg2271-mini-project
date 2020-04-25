@@ -276,13 +276,28 @@ void UART1_IRQHandler(void) {
         } else if (rx_data == 0x01) {
             // press music icon to play finish tone
             osThreadFlagsSet(finish_tone_flag, 0x0001);
-        } else if(rx_data > 0x71 && rx_data < 0x8F) { // 128 - 15 = 113 and 128 + 15 = 143
-					osEventFlagsClear(moving_flag, 0x0000001);
 				} else {
 					myDataPkt myData;
-          myData.x = prev_num;
-					myData.y = rx_data;
-					osEventFlagsSet(moving_flag, 0x0000001);
+					
+					if(prev_num > 0x71 && prev_num < 0x8F) { // 128 - 15 = 113 and 128 + 15 = 143
+						myData.x = 0x80; // 128
+					} else {
+						myData.x = prev_num;
+					}
+					
+					if(rx_data > 0x71 && rx_data < 0x8F) { // 128 - 15 = 113 and 128 + 15 = 143
+						myData.y = 0x80; // 128
+					} else {
+						myData.y = rx_data;
+					}
+					
+					
+					if(myData.x == 0x80 && myData.y == 0x80) {
+						osEventFlagsClear(moving_flag, 0x0000001);
+					} else {
+						osEventFlagsSet(moving_flag, 0x0000001);
+					}
+					
 					osMessageQueuePut(coordMsg, &myData, NULL, 0); 
 					osSemaphoreRelease(mySem_Wheels);
 				} 
