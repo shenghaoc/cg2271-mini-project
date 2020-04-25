@@ -56,7 +56,7 @@
 
 osEventFlagsId_t moving_flag;
 
-osThreadId_t finish_tone_flag, connecting_tone_flag, connecting_flash_flag;
+osThreadId_t finish_tone_flag, connecting_tone_flag, connecting_flash_flag, main_flag, wheel_control_flag;
 
 osMutexId_t buzzerMutex;
 
@@ -270,37 +270,13 @@ void UART1_IRQHandler(void) {
 			
 			if (has_prev == 1) {
 				has_prev = 0;
-				if (rx_data == 0x00) {
-            osThreadFlagsSet(connecting_tone_flag, 0x0001);
-            osThreadFlagsSet(connecting_flash_flag, 0x0001);
-        } else if (rx_data == 0x01) {
-            // press music icon to play finish tone
-            osThreadFlagsSet(finish_tone_flag, 0x0001);
-				} else {
-					myDataPkt myData;
-					
-					if(prev_num > 0x71 && prev_num < 0x8F) { // 128 - 15 = 113 and 128 + 15 = 143
-						myData.x = 0x80; // 128
-					} else {
-						myData.x = prev_num;
-					}
-					
-					if(rx_data > 0x71 && rx_data < 0x8F) { // 128 - 15 = 113 and 128 + 15 = 143
-						myData.y = 0x80; // 128
-					} else {
-						myData.y = rx_data;
-					}
-					
-					
-					if(myData.x == 0x80 && myData.y == 0x80) {
-						osEventFlagsClear(moving_flag, 0x0000001);
-					} else {
-						osEventFlagsSet(moving_flag, 0x0000001);
-					}
-					
-					osMessageQueuePut(coordMsg, &myData, NULL, 0); 
-					osSemaphoreRelease(mySem_Wheels);
-				} 
+				myDataPkt myData;
+				myData.x = prev_num;
+				myData.y = rx_data;
+				
+				osMessageQueuePut(coordMsg, &myData, NULL, 0); 
+				osThreadFlagsSet(main_flag, 0x0001);
+			
 			} else {
 				prev_num = rx_data;
 				has_prev = 1;
@@ -470,22 +446,6 @@ void red_thread(void *argument) {
     }
 }
 
-
-void wheel_control_thread(void *argument) {
-    //...
-    myDataPkt myRXData;
-    uint8_t x;
-    uint8_t y;
-    for (;;) {
-        osSemaphoreAcquire(mySem_Wheels, osWaitForever);
-        osMessageQueueGet(coordMsg, &myRXData, NULL, osWaitForever);
-        x = myRXData.x;
-        y = myRXData.y;
-
-        osDelay(5000);
-    }
-}
-
 void connecting_tone_thread(void *argument) {
     //...
     for (;;) {
@@ -531,6 +491,73 @@ void connecting_flash_thread(void *argument) {
     }
 }
 
+void wheel_control_thread(void *argument) {
+    //...
+
+    for (;;) {
+        osSemaphoreAcquire(mySem_Wheels, osWaitForever);
+			if (osThreadFlagsGet() == 0x0001) {
+						// move
+			}else if (osThreadFlagsGet() == 0x0002)  {
+						// move
+			}else if (osThreadFlagsGet() == 0x0004)  {
+						// move
+			}else if (osThreadFlagsGet() == 0x0008)  {
+						// move
+			}
+			osThreadFlagsClear(0x0001 | 0x0002 | 0x0004 | 0x0008);
+
+
+        osDelay(5000);
+    }
+}
+
+void app_main (void *argument) {
+
+  // ...    
+	myDataPkt myRXData;
+    uint8_t x;
+    uint8_t y;
+  for (;;) {
+		osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);	
+		    x = myRXData.x;
+				if (x == 0x00) {
+            osThreadFlagsSet(connecting_tone_flag, 0x0001);
+            osThreadFlagsSet(connecting_flash_flag, 0x0001);
+        } else if (x == 0x01) {
+            // press music icon to play finish tone
+            osThreadFlagsSet(finish_tone_flag, 0x0001);
+				} else {
+        y = myRXData.y;
+					
+					if ((x > 113 && x < 143) && (y > 113 && y < 143)){
+						osEventFlagsClear(moving_flag, 0x0000001);
+					} else {
+						osEventFlagsSet(moving_flag, 0x0000001);
+					}
+					
+					if (x > 128 && y > 128) {
+						// move
+					osThreadFlagsSet(wheel_control_flag, 0x0001);
+					} else if (x > 128 && y < 128) {
+						// move
+					osThreadFlagsSet(wheel_control_flag, 0x0002);
+					}else if (x < 128 && y > 128) {
+						// move
+					osThreadFlagsSet(wheel_control_flag, 0x0004);
+					}else if (x < 128 && y < 128) {
+						// move
+					osThreadFlagsSet(wheel_control_flag, 0x0008);
+					}
+
+					
+					
+					
+					osSemaphoreRelease(mySem_Wheels);
+				} 
+	}
+}
+
 int main(void) {
 
     // System Initialization
@@ -559,8 +586,9 @@ int main(void) {
 		connecting_flash_flag = osThreadNew(connecting_flash_thread, NULL, NULL);
 
     // wheels thread
-    osThreadNew(wheel_control_thread, NULL, &wheels_attr);
+    wheel_control_flag = osThreadNew(wheel_control_thread, NULL, &wheels_attr);
 		
+		main_flag = osThreadNew(app_main, NULL, &main_attr);    // Create application main thread
     osKernelStart();                      // Start thread execution
     for (;;) {}
 }
