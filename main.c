@@ -551,10 +551,12 @@ void app_main(void *argument) {
     for (;;) {
         osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
         osMessageQueueGet(coordMsg, &myRXData, NULL, osWaitForever);
-        if (myRXData.x == 0x00) {
+				x = myRXData.x;
+				y = myRXData.y;
+        if (x == 0x00) {
             osThreadFlagsSet(connecting_tone_flag, 0x0001);
             osThreadFlagsSet(connecting_flash_flag, 0x0001);
-        } else if (myRXData.x == 0x01) {
+        } else if (x == 0x01) {
             // press music icon to play finish tone
             osThreadFlagsSet(finish_tone_flag, 0x0001);
         } else {
@@ -562,10 +564,10 @@ void app_main(void *argument) {
             l = 1;
             r = 1;
             // Start of Wheel_control
-            if (myRXData.x > 0x71 && myRXData.x < 0x8F) {
+            if (x > 0x71 && x < 0x8F) {
                 l = 0;
             }
-            if (myRXData.y > 0x71 && myRXData.y < 0x8F) {
+            if (y > 0x71 && y < 0x8F) {
                 r = 0;
             }
 
@@ -574,33 +576,27 @@ void app_main(void *argument) {
                 osThreadFlagsSet(wheel_control_flag, 0x0001 | 0x0004);
             } else {
                 osEventFlagsSet(moving_flag, 0x0000001);
-                x = (myRXData.x > 128) ? (myRXData.x - 128) : (128 - myRXData.x);
-                y = (myRXData.y > 128) ? (myRXData.y - 128) : (128 - myRXData.y);
                 if (r == 1) {
-                    r = x * ((myRXData.y > 128) ? (1 - y / 128) * x : x);
-
                     //for Right
-                    if (myRXData.y > 128) {
-                        r = myRXData.y - 128;
+                    if (y > 128) {
+                        r = y - 128;
                         r = r / 2;
                         osThreadFlagsSet(wheel_control_flag, 0x0001);
                     } else {
-                        r = 128 - myRXData.y;
+                        r = 128 - y;
                         r = r / 2;
                         osThreadFlagsSet(wheel_control_flag, 0x0002);
                     }
                 }
 
                 if (l == 1) {
-                    l = x * ((myRXData.y < 128) ? (1 - y / 128) * x : x);
-
                     //for left
-                    if (myRXData.x > 128) {
-                        l = myRXData.x - 128;
+                    if (x > 128) {
+                        l = x - 128;
                         l = l / 2;
                         osThreadFlagsSet(wheel_control_flag, 0x0004);
                     } else {
-                        l = 128 - myRXData.x;
+                        l = 128 - x;
                         l = l / 2;
                         osThreadFlagsSet(wheel_control_flag, 0x0008);
                     }
