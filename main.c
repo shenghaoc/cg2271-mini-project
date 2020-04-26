@@ -576,7 +576,7 @@ void app_main(void *argument) {
                 osEventFlagsSet(moving_flag, 0x0000001);
                 x = (myRXData.x > 128) ? (myRXData.x - 128) : (128 - myRXData.x);
                 y = (myRXData.y > 128) ? (myRXData.y - 128) : (128 - myRXData.y);
-                if (r != 0) {
+                if (r == 1) {
                     r = x * ((myRXData.y > 128) ? (1 - y / 128) * x : x);
 
                     //for Right
@@ -591,7 +591,7 @@ void app_main(void *argument) {
                     }
                 }
 
-                if (l != 0) {
+                if (l == 1) {
                     l = x * ((myRXData.y < 128) ? (1 - y / 128) * x : x);
 
                     //for left
