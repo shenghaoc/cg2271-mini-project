@@ -23,8 +23,8 @@
 #define GREEN_LED_3 4 // Port A Pin 4
 #define GREEN_LED_4 12 // Port A Pin 12
 #define GREEN_LED_5 4 // Port D Pin 4
-#define GREEN_LED_6 1 // Port A Pin 1
-#define GREEN_LED_7 2 // Port A Pin 2
+#define GREEN_LED_6 2 // Port A Pin 2
+#define GREEN_LED_7 1 // Port A Pin 1
 
 #define MASK(x) (1 << (x))
 
