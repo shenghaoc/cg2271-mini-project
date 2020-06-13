@@ -84,7 +84,6 @@ osMessageQueueId_t coordMsg;
 
 
 // can avoid two different functions for red LED since only delay changes
-volatile uint32_t delay = 250;
 volatile uint32_t motor_frequency = 250;
 volatile uint8_t r = 0;//myRXData.x - 110 ;
 volatile uint8_t l = 0; //(myRXData.y - 110);
